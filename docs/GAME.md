@@ -1,6 +1,6 @@
 # KESTREL-9: Orbital Ward - game documentation
 
-This document describes what `index.html` contains: the features of the game and how the code behind them works. Everything (markup, CSS and JavaScript) lives in that one file. There is no build step and no dependency besides the Share Tech Mono web font from Google Fonts.
+This document describes the features of the game and how the code behind them works. `index.html` holds the markup, `src/style.css` the styles, and `src/` the game as native ES modules (entry point `src/main.js`). There is no build step and no dependency besides the Share Tech Mono web font from Google Fonts.
 
 - [Feature overview](#feature-overview)
 - [Views](#views)
@@ -186,37 +186,39 @@ On touch or narrow screens there is an on-screen d-pad and action buttons, a HUD
 
 ## Code architecture
 
-The script is one `'use strict'` block, grouped into sections marked with `/* ==== NAME ==== */` comments. In file order:
+The game is split into ES modules under `src/`, one per area, and every module imports what it uses explicitly. Shared mutable state lives in `src/core/state.js` (see [State](#state)).
 
-| Section | Responsibility |
+| Module | Responsibility |
 | --- | --- |
-| Constants and tables | World size (`WW` x `WH` = 144 x 100), tile types `T`, and all data tables (see below). |
-| UTIL | Small helpers: `$`, random (`rnd`, `rr`, `pick`, `shuffle`, `pickW`), `clamp`, `idx`, `cheb` (Chebyshev distance), `esc` (HTML escape). |
-| SHAPES | `genShape` makes a connected floor blob of a given kind, walls it, and picks 2 to 4 port candidates. Rotation helpers: `rotDims`, `rotP`, `rotD`, `toWorld`, `toLocal`. |
-| PACKS | A "pack" is a portable section: shape plus machines, crates, items, actors and breaches in local coordinates. `makePack` places fixtures (keeping the floor connected via `shapeFloodOk`), the grid node, terminal, junction box, mounts, hardpoints and windows. `fillDerelict` adds loot and enemies. |
-| WORLD BUILD | `rebuildMap` rasterises all sections into `M.map` (tile types), `M.own` (owner section) and `M.room` (floor owner), places breaches and machines, and finds rack hatches. `fitsAt` and `dockPack` attach a pack to a free port. `packModule` turns a docked section back into a pack. Also hull editing (`cutSpot`, `doCut`, `doSeal`, `setBrace`), structure (`jointLoads`, `stressTick`), tube planning (`planTube`, `buildTube`) and `canDetach`. |
-| MACHINES / STOCK | `online`, `addStock`, `caps` (storage caps from lockers), item dropping, `droneCap`. |
-| NEW GAME | `newGame(start)` builds `G` and `P`, the starting station, loot, breaches, sectors, Earth and the intro log. |
-| EXTERIOR OBJECTS | Spawners for debris, derelicts, wrecks, pods and rogues in local space, and `spawnDrone`. |
-| ORBITAL SECTORS | Sector generation, `genStation`, the intrusion console (`hackInit`, `hackTurn`, `hackConsole`), `subdueStation`, sight (`updateSight`), crew AI (`crewTick`, `crewPath`, `engTarget`), allies, home relocation, sensors (`sensorTick`, `activeSweep`, `startFocus`) and drone transfers. |
-| EARTH | Land generation, faction territory, `territoryTick`, `legacyTick`. |
-| FOV | Ray-cast field of view (radius 12), line of sight, BFS helpers, pressure lookup. |
-| LOG / MODAL | `log`, `cmb`, `showModal` (buttons, number hotkeys, danger hatch, hold-to-confirm), `queueModal`, `machinePlate`, `showLog`. |
-| STATS / DAMAGE | `stats` (derived from gear), `hurtPlayer`, actor damage and death. |
-| TURN | `endTurn`, `waitN`, `refresh`, and the per-turn ticks (see [Turn pipeline](#turn-pipeline)). |
-| STORYTELLER | `INC` incident list and `directorTick`. |
-| EXTERIOR TICK | Drone pathing (`extNext`, `moveTo`), `droneAct`, rogue and swarm AI, turrets and point defense, `extTick`. |
-| EARTH TICK / REQUESTS | First contact, request generation and completion, reputation, sabotage, IFF spoof resolution, satellite release. |
-| END / DEATH | `playerDied`, `endGame`. |
-| PLAYER ACTIONS | Moving, melee, firing, pickup, eating, item and part menus, machine, node, mount, patch and fabricator menus, claiming, silent running, satellite deployment. |
-| EXTERIOR COMMANDS | `extTap` dispatches a tap in the exterior to the right drone command or menu. Tow, connector, construct, joint, tube, interface and station menus. |
-| EARTH ACTIONS | Survey, cargo launch, spoof and mass driver menus. |
-| RENDER | Canvas drawing for all four views, fixture art, labels and effects. |
-| UI | Side panels and pad per tab (`updateUI`, `uiStation`, `uiExt`, `uiOrbit`, `uiEarth`, `renderPad`), `padAction`. |
-| HELP / TITLE / SAVE | Help text, title screen, new game start, save and load. |
-| INPUT | Click-to-travel, keyboard, pointer (tap, drag, wheel zoom) and resize handling, then boot. |
+| `core/constants.js`, `core/data.js` | World size (`WW` x `WH` = 144 x 100) and tile types `T` in `constants.js`; all data tables (see below) plus the item helpers `itN` and `mk` in `data.js`. |
+| `core/util.js` | Small helpers: `$`, random (`rnd`, `rr`, `pick`, `shuffle`, `pickW`), `clamp`, `idx`, `cheb` (Chebyshev distance), `esc` (HTML escape). |
+| `world/shapes.js` | `genShape` makes a connected floor blob of a given kind, walls it, and picks 2 to 4 port candidates. Rotation helpers: `rotDims`, `rotP`, `rotD`, `toWorld`, `toLocal`. |
+| `world/packs.js` | A "pack" is a portable section: shape plus machines, crates, items, actors and breaches in local coordinates. `makePack` places fixtures (keeping the floor connected via `shapeFloodOk`), the grid node, terminal, junction box, mounts, hardpoints and windows. `fillDerelict` adds loot and enemies. |
+| `world/build.js` | `rebuildMap` rasterises all sections into `M.map` (tile types), `M.own` (owner section) and `M.room` (floor owner), places breaches and machines, and finds rack hatches. `fitsAt` and `dockPack` attach a pack to a free port. `packModule` turns a docked section back into a pack. Also hull editing (`cutSpot`, `doCut`, `doSeal`, `setBrace`), structure (`jointLoads`, `stressTick`), tube planning (`planTube`, `buildTube`) and `canDetach`. |
+| `world/machines.js` | `online`, `addStock`, `caps` (storage caps from lockers), item dropping, `droneCap`. |
+| `world/new-game.js` | `newGame(start)` builds `G` and `P`, the starting station, loot, breaches, sectors, Earth and the intro log. |
+| `space/exterior-objects.js` | Spawners for debris, derelicts, wrecks, pods and rogues in local space, and `spawnDrone`. |
+| `space/sectors.js` | Sector generation, `genStation`, the intrusion console (`hackInit`, `hackTurn`, `hackConsole`), `subdueStation`, sight (`updateSight`), crew AI (`crewTick`, `crewPath`, `engTarget`), allies, home relocation, sensors (`sensorTick`, `activeSweep`, `startFocus`) and drone transfers. |
+| `space/earth.js` | Land generation, faction territory, `territoryTick`, `legacyTick`. |
+| `world/fov.js` | Ray-cast field of view (radius 12), line of sight, BFS helpers, pressure lookup. |
+| `ui/log-modal.js` | `log`, `cmb`, `showModal` (buttons, number hotkeys, danger hatch, hold-to-confirm), `queueModal`, `machinePlate`, `showLog`. |
+| `sim/stats.js` | `stats` (derived from gear), `hurtPlayer`, actor damage and death. |
+| `sim/turn.js` | `endTurn`, `waitN`, `refresh`, and the per-turn ticks (see [Turn pipeline](#turn-pipeline)). |
+| `sim/storyteller.js` | `INC` incident list and `directorTick`. |
+| `sim/exterior-tick.js` | Drone pathing (`extNext`, `moveTo`), `droneAct`, rogue and swarm AI, turrets and point defense, `extTick`. |
+| `sim/earth-tick.js` | First contact, request generation and completion, reputation, sabotage, IFF spoof resolution, satellite release. |
+| `sim/end.js` | `playerDied`, `endGame`. |
+| `actions/player.js` | Moving, melee, firing, pickup, eating, item and part menus, machine, node, mount, patch and fabricator menus, claiming, silent running, satellite deployment. |
+| `actions/exterior.js` | `extTap` dispatches a tap in the exterior to the right drone command or menu. Tow, connector, construct, joint, tube, interface and station menus. |
+| `actions/earth.js` | Survey, cargo launch, spoof and mass driver menus. |
+| `ui/render.js` | Canvas drawing for all four views, fixture art, labels and effects. |
+| `ui/panels.js` | Side panels and pad per tab (`updateUI`, `uiStation`, `uiExt`, `uiOrbit`, `uiEarth`, `renderPad`), `padAction`. |
+| `ui/help-title.js`, `core/save.js` | Help text, title screen and new game start in `help-title.js`; save and load in `save.js`. |
+| `main.js` | Click-to-travel, keyboard, pointer (tap, drag, wheel zoom) and resize handling, then boot. |
 
 ### State
+
+All four live in `src/core/state.js`. `G` and `P` are replaced on new game and load, so other modules change them through `setG` and `setP`. ES module imports are live bindings, so every reader sees the current object.
 
 - `G`: the whole game state (turn, sections, machines, items, crates, actors, stock, exterior objects and drones, sectors, stations, factions, requests, Earth grids, timers, stats, log). It is plain JSON so it can be saved.
 - `P`: the player (position, body, O2, nutrition, equipped slots, slot caps, inventory).

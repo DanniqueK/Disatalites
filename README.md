@@ -4,7 +4,16 @@ Turn-based roguelike set on a half-dead orbital station above a post-apocalyptic
 
 ## Play
 
-The whole game is a single file: open `index.html` in a browser. No build step, no dependencies (it loads one web font from Google Fonts).
+Plain HTML, CSS and native ES modules: no build step, no dependencies (it loads one web font from Google Fonts).
+
+Browsers don't load ES modules from `file://`, so serve the folder over HTTP, for example:
+
+```sh
+npx serve .
+# or: python -m http.server
+```
+
+Then open the printed URL. VS Code's Live Server extension works too.
 
 To host it, enable GitHub Pages for this repository (Settings > Pages > deploy from the `main` branch, root folder).
 
