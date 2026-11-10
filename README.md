@@ -14,3 +14,7 @@ To host it, enable GitHub Pages for this repository (Settings > Pages > deploy f
 - Click a machine, or press U next to it: use it
 - R: wait 10 turns · F: fire · G: pick up · L: log · T: labels · ?: help
 - Touch: on-screen pad, tap to walk, tap to use
+
+## Documentation
+
+See [docs/GAME.md](docs/GAME.md) for a full feature list and a walkthrough of how `index.html` works.
