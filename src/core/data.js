@@ -190,7 +190,14 @@ export const MD = {
     pri: 3,
     desc: 'Grows 1 ration every 20 turns while online.',
   },
-  solar: { n: 'Solar Controller', g: '*', c: '#ffe060', gen: 8, desc: '+8 power while online.' },
+  solar: {
+    n: 'Solar Controller',
+    g: '*',
+    c: '#ffe060',
+    gen: 8,
+    desc: '+8 power while online.',
+    cat: 'power',
+  },
   launch: {
     n: 'Launch Rail',
     g: 'L',
@@ -346,7 +353,7 @@ export const FX = {
       [2, 2],
     ],
   },
-  solar: { p: 'w', s: [[2, 1]] },
+  solar: { p: 'w', s: [[2, 1]], cat: 'power' },
   launch: {
     p: 'w',
     s: [
@@ -362,7 +369,7 @@ export const FX = {
     ],
   },
   maint: { p: 'w', s: [[2, 2]] },
-  refinery: { p: 'c', s: [[2, 2]] },
+  refinery: { p: 'c', s: [[2, 2]], cat: 'eng' },
   med: { p: 'w', s: [[2, 1]] },
   defense: {
     p: 'w',
@@ -396,35 +403,48 @@ export const ROOM_SIZE = {
   M: [7, 5],
   L: [7, 7],
 };
+/** Room categories for colour coding (floor tint, ROOMS overlay), like department colours. */
+export const ROOM_CAT = {
+  crew: { n: 'Crew', c: '#40e0c0' },
+  power: { n: 'Power', c: '#ffc040' },
+  life: { n: 'Life support', c: '#4aa8ff' },
+  cargo: { n: 'Cargo', c: '#c8925a' },
+  eng: { n: 'Engineering', c: '#ff8a40' },
+  drones: { n: 'Drones', c: '#b08aff' },
+  signals: { n: 'Signals', c: '#40c8ff' },
+  defense: { n: 'Defense', c: '#ff5a5a' },
+  hall: { n: 'Hallway', c: '#8a949e' },
+};
 /**
  * Section functions. `m` are the machines the room is built around, `sz` its standard size (it grows
- * to the next size if the machines do not fit), `hall` marks corridor pieces, which rooms dock onto.
+ * to the next size if the machines do not fit), `hall` marks corridor pieces, which rooms dock onto, and
+ * `cat` is the colour category (`ROOM_CAT`).
  */
 export const FN = {
-  pod_clone: { n: 'Clone Bay', m: ['pod', 'terminal'], sz: 'S' },
-  pod_cryo: { n: 'Cryo Bay', m: ['cryo', 'terminal'], sz: 'S' },
-  junction: { n: 'Rack Room', m: ['rack', 'escrub'], sz: 'S' },
-  power: { n: 'Power Core', m: ['reactor', 'battery'], sz: 'M' },
-  storage: { n: 'Storage', m: ['locker'], sz: 'S' },
-  life: { n: 'Life Support', m: ['scrubber'], sz: 'S' },
-  workshop: { n: 'Workshop', m: ['fab', 'terminal'], sz: 'M' },
-  comms: { n: 'Comms', m: ['comms'], sz: 'S' },
-  dock: { n: 'Drone Bay', m: ['rack', 'rack'], sz: 'M' },
-  hydro: { n: 'Hydroponics', m: ['hydro'], sz: 'M' },
-  solar: { n: 'Solar Array', m: ['solar'], sz: 'S' },
-  launch: { n: 'Launch Bay', m: ['launch'], sz: 'M' },
-  sensor: { n: 'Sensor Array', m: ['sensor'], sz: 'S' },
-  auto: { n: 'Automation Hub', m: ['maint'], sz: 'S' },
-  refinery: { n: 'Refinery', m: ['refinery'], sz: 'S' },
-  medbay: { n: 'Med Bay', m: ['med'], sz: 'S' },
-  hab: { n: 'Hab Module', m: ['bunk', 'bunk'], sz: 'S' },
-  cargo: { n: 'Cargo Hold', m: ['locker', 'locker'], loot: 4, sz: 'M' },
-  defense: { n: 'Defense Module', m: ['defense'], sz: 'S' },
-  driver: { n: 'Mass Driver Bay', m: ['driver'], sz: 'M' },
-  engine: { n: 'Engine Block', m: ['thruster', 'thruster'], sz: 'M' },
-  hall: { n: 'Hallway', m: [], hall: true },
-  hub: { n: 'Junction Hub', m: [], hall: true },
-  tube: { n: 'Hallway', m: [], hall: true },
+  pod_clone: { n: 'Clone Bay', m: ['pod', 'terminal'], sz: 'S', cat: 'crew' },
+  pod_cryo: { n: 'Cryo Bay', m: ['cryo', 'terminal'], sz: 'S', cat: 'crew' },
+  junction: { n: 'Rack Room', m: ['rack', 'escrub'], sz: 'S', cat: 'drones' },
+  power: { n: 'Power Core', m: ['reactor', 'battery'], sz: 'M', cat: 'power' },
+  storage: { n: 'Storage', m: ['locker'], sz: 'S', cat: 'cargo' },
+  life: { n: 'Life Support', m: ['scrubber'], sz: 'S', cat: 'life' },
+  workshop: { n: 'Workshop', m: ['fab', 'terminal'], sz: 'M', cat: 'eng' },
+  comms: { n: 'Comms', m: ['comms'], sz: 'S', cat: 'signals' },
+  dock: { n: 'Drone Bay', m: ['rack', 'rack'], sz: 'M', cat: 'drones' },
+  hydro: { n: 'Hydroponics', m: ['hydro'], sz: 'M', cat: 'life' },
+  solar: { n: 'Solar Array', m: ['solar'], sz: 'S', cat: 'power' },
+  launch: { n: 'Launch Bay', m: ['launch'], sz: 'M', cat: 'drones' },
+  sensor: { n: 'Sensor Array', m: ['sensor'], sz: 'S', cat: 'signals' },
+  auto: { n: 'Automation Hub', m: ['maint'], sz: 'S', cat: 'eng' },
+  refinery: { n: 'Refinery', m: ['refinery'], sz: 'S', cat: 'eng' },
+  medbay: { n: 'Med Bay', m: ['med'], sz: 'S', cat: 'crew' },
+  hab: { n: 'Hab Module', m: ['bunk', 'bunk'], sz: 'S', cat: 'crew' },
+  cargo: { n: 'Cargo Hold', m: ['locker', 'locker'], loot: 4, sz: 'M', cat: 'cargo' },
+  defense: { n: 'Defense Module', m: ['defense'], sz: 'S', cat: 'defense' },
+  driver: { n: 'Mass Driver Bay', m: ['driver'], sz: 'M', cat: 'defense' },
+  engine: { n: 'Engine Block', m: ['thruster', 'thruster'], sz: 'M', cat: 'power' },
+  hall: { n: 'Hallway', m: [], hall: true, cat: 'hall' },
+  hub: { n: 'Junction Hub', m: [], hall: true, cat: 'hall' },
+  tube: { n: 'Hallway', m: [], hall: true, cat: 'hall' },
 };
 /** Corridor pieces (hallways, hubs, tubes and welded connectors). Rooms may only dock onto these. */
 export const isHall = fn => !!(FN[fn] && FN[fn].hall);
@@ -536,7 +556,7 @@ export const RC = {
   drone_util: { n: 'Utility Drone', s: 12, c: 4, t: 10 },
   drone_tug: { n: 'Tug Drone', s: 20, c: 6, t: 14 },
   drone_guard: { n: 'Guard Drone', s: 16, c: 8, t: 12 },
-  tube: { n: 'Hallway Kit', s: 8, c: 1, t: 6 },
+  tube: { n: 'Hallway Kit', s: 8, c: 1, t: 6, cat: 'hall' },
   sat_COMMS: { n: 'COMMS Satellite', s: 20, c: 12, t: 20 },
   sat_WEATHER: { n: 'WEATHER Satellite', s: 22, c: 14, t: 22 },
   sat_NAV: { n: 'NAV Satellite', s: 22, c: 14, t: 22 },

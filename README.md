@@ -21,7 +21,7 @@ To host it, enable GitHub Pages for this repository (Settings > Pages > deploy f
 
 - WASD / arrows / numpad / vi keys: move (hold two WASD keys for diagonals)
 - Click a machine, or press U next to it: use it
-- R: wait 10 turns · F: fire · G: pick up · Shift+L: log (plain L also works outside the STATION view, where it is a vi move key) · T: labels · ?: help
+- R: wait 10 turns · F: fire · G: pick up · Shift+L: log (plain L also works outside the STATION view, where it is a vi move key) · T: labels · V: rooms overlay · ?: help
 - Touch: on-screen pad, tap to walk, tap to use
 
 ## Development

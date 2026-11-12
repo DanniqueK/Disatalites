@@ -26,6 +26,7 @@ STATION view (inside, you):
 EXTERIOR view (drones). It has two maps: the HULL (your station and the space right around it, where you build) and LOCAL SPACE (the region around you: debris, wrecks, stations). Drones fly between them in a couple of turns; tap KESTREL-9 in local space to send a drone back.
  BUILDING (Utility drone): tap a free door to build a hallway segment (a Hallway Kit from the Fabricator, or scrap and circuits) or a junction hub, to construct a room from a learned schematic (only onto a hallway door), or to seal the door. Tap a sealed door to open it again.
  LAYOUT: KESTREL-9 is built around 3-wide hallways and a central junction hub. Rooms are standard sizes and only dock onto hallway doors, never onto each other, so you can always walk the station along its corridors. A Connector Tube kit from the Fabricator adds another hallway segment.
+ ROOMS (V or the ROOMS button): colours every room by its job (crew teal, power yellow, life support blue, cargo brown, engineering orange, drones purple, signals cyan, defense red) and shows what is wrong with it: locked, breached, low air, off the power bus, or its main machine broken. Rooms you control keep a faint tint of their colour on the floor.
  SENSORS (ORBIT tab): space starts unknown. Passive sensors slowly pick up loud things nearby. ACTIVE SWEEP finds every contact in range but tells everything in range where you are: dormant platforms may lock on and fire, rogue AIs may send hunters. Unknown contacts (?) can be identified with a focused scan (needs a Sensor Array or Comms Array, keeps you loud for a while) or by sending a drone.
  HACKING: a Utility drone at a foreign station opens the INTRUSION console. Each security layer has a type: AUTH (spoof a handshake), FIREWALL (inject a worm), WATCHDOG (raises trace while you sit on it), BLACK ICE (burns the drone on brute force). Probe to identify a layer and double your next brute force. At 100% trace the link burns and the station wakes up. You can also let the drone run its own script.
  SCRAPPING: tow a loose section to the hull yard (or detach one of yours) and scrap it there: materials plus its hull and machine schematics. Scrapping out in the field only gives salvage, unless the drone carries a Survey Scanner (Fabricator).
@@ -49,7 +50,7 @@ EARTH view (politics):
  Legacy satellites shoot settlements and satellites of anyone not in their IFF tables. Spoofing tags is your strongest lever.
 
 Events are paced by a storyteller: quiet stretches, then trouble, then time to recover. It goes easier on you when you are struggling.
-Keys: Z/X/O/C views, T tags, Shift+L log (L also works outside the STATION view), . or SPACE wait, ? help. Autosaves in this browser.${G && G.seed != null ? `\n\nRun seed: ${G.seed} (mention it when reporting a bug)` : ''}`,
+Keys: Z/X/O/C views, T tags, V rooms overlay (STATION), Shift+L log (L also works outside the STATION view), . or SPACE wait, ? help. Autosaves in this browser.${G && G.seed != null ? `\n\nRun seed: ${G.seed} (mention it when reporting a bug)` : ''}`,
     [{ t: 'Close' }],
   );
 }
