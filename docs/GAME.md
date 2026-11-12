@@ -118,6 +118,7 @@ Always visible: LOG and COMBAT scroll panels, STATUS bars (body, suit O2, nutrit
 - `genSectors` populates each sector with objects: debris, wrecks, stations (via `genStation`), rogue swarms, rafts (lifeboats), legacy platforms and null pockets. The home sector gets a calm supply depot and a utility drone wreck. One known neighbour always gets a civil station with a Comms Array.
 - Detection levels (`det`): 0 unknown, 1 contact (fuzzy position), 2 identified.
 - Passive sensors find loud sectors over time. An active sweep (8 battery, 30 turn cooldown) finds everything in range but may wake legacy platforms (which then fire kinetic strikes) and rogue AIs (which send hunters). A focused scan identifies one contact over several turns and keeps you loud.
+- **Orbital decay** (`sim/decay.js`): loose debris, wrecks, pods and rooms in LEO sectors get a burn-up timer (500 to 900 turns) and burn up when it runs out, unless a drone is towing them. The hull yard and higher orbits are safe. The salvage preview shows the time left. A station based in LEO loses 0.12% altitude per turn (`G.alt`, shown in the STATUS panel), with warnings at 50% and 25%. At 0% the hull breaches every 20 turns. An online Ion Drive can reboost the orbit (15 battery, loud).
 - **Watch list** (`sim/watch.js`, `G.watch`): "Track" in a contact's menu (ORBIT) or a target's menu (EXTERIOR) pins it. Tracked things are listed under WATCH in the contacts and exterior panels (click to jump to them), get a cyan frame on the map, and `watchTick` logs when one is identified, starts moving, takes damage, leaves the sector or is gone.
 - **Signature** (`G.sig`) comes from power draw, drones outside, comms, station movement, fabrication, focused scans and a decaying "hot" value from gunfire and sweeps. High signature raises the chance of hunters and radar strikes. Silent running switches off non-essential machines.
 
@@ -317,10 +318,11 @@ Every action that takes time calls `endTurn()`, which runs, in order:
 7. `allyTick`
 8. `hostileTick` (station enemies chase via a BFS distance map)
 9. `extTick` (sensors, sight, station move, drones, rogues, turrets, point defense, foreign defenses)
-10. `watchTick` (the watch list)
-11. `directorTick` (storyteller)
-12. `earthTick` (requests, survey, spoof, legacy reveal, territory and legacy every 50 turns, end checks)
-13. `objTick`
+10. `decayTick` (orbital decay in LEO)
+11. `watchTick` (the watch list)
+12. `directorTick` (storyteller)
+13. `earthTick` (requests, survey, spoof, legacy reveal, territory and legacy every 50 turns, end checks)
+14. `objTick`
 
 Then it recomputes field of view, handles death, emits `changed` so the UI redraws (unless running quietly inside a multi-turn loop) and autosaves every 20 turns.
 

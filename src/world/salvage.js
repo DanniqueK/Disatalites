@@ -1,6 +1,7 @@
 import { BR, DT, isHall, MC, MD, SMALL, TAGK } from '../core/data.js';
 import { log } from '../core/messages.js';
 import { G } from '../core/state.js';
+import { decayLeft } from '../sim/decay.js';
 import { HULL } from '../space/sectors.js';
 import { cloneShape } from './shapes.js';
 
@@ -68,6 +69,8 @@ export function salvageEstimate(o, d) {
           : 'possibly hostiles aboard',
       );
   }
+  const left = decayLeft(o);
+  if (left != null) hazards.push(`falling: burns up in about ${left} turns`);
   const near = (k, r) =>
     G.ext.objs.filter(
       q => q !== o && q.kind === k && q.sec === o.sec && Math.hypot(q.x - o.x, q.y - o.y) <= r,

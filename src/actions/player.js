@@ -5,6 +5,7 @@ import { cmb, log } from '../core/messages.js';
 import { random } from '../core/rng.js';
 import { G, M, P, V } from '../core/state.js';
 import { an, cheb, clamp, D8, idx, inB, pick, roll, rr } from '../core/util.js';
+import { homeInLowOrbit, reboost, REBOOST_COST } from '../sim/decay.js';
 import { releaseSat } from '../sim/earth-tick.js';
 import { actorAt, addFx, damageActor, stats } from '../sim/stats.js';
 import { canAct, endTurn, onGrid, refresh } from '../sim/turn.js';
@@ -617,6 +618,19 @@ export function machineMenu(m) {
         }
         log('You get up from the bunk.');
         refresh();
+      },
+    });
+  if (m.type === 'thruster' && homeInLowOrbit())
+    b.push({
+      t: `Reboost the orbit (${REBOOST_COST} battery, loud) · altitude ${Math.round(G.alt ?? 100)}%`,
+      dis: !online(m) || G.bat < REBOOST_COST,
+      f: () => {
+        const why = reboost();
+        if (why) {
+          log(why, 'warn');
+          return refresh();
+        }
+        endTurn();
       },
     });
   b.push({ t: 'Close' });

@@ -6,6 +6,7 @@ import { log } from '../core/messages.js';
 import { G, P, V } from '../core/state.js';
 import { clamp, esc, pad5 } from '../core/util.js';
 import { zoomAt } from '../main.js';
+import { homeInLowOrbit } from '../sim/decay.js';
 import { sunState } from '../sim/eclipse.js';
 import { atHatch } from '../sim/exterior-tick.js';
 import { stats } from '../sim/stats.js';
@@ -124,7 +125,7 @@ export function updateUI() {
   const at = G.atmo || { cap: 0, area: 1 };
   $('#res').innerHTML =
     esc(
-      `SCRAP ${G.stock.scrap}/${c.scrap}  CIRCUITS ${G.stock.circ}/${c.circ}\nRATIONS ${G.stock.rat}/${c.rat}  AMMO ${G.stock.ammo}  KITS ${G.kits}\nPOWER gen ${G.pw.gen} / draw ${G.pw.dem}\nORBIT ${sun.band} · ${sun.inShadow ? 'ECLIPSE' : 'SUN'} ${sun.untilChange}t\nAIR scrubbers ${at.cap} / floor ${at.area}\nLOC: ${m ? m.name + ' (' + BR[m.brand].cc + ')' : 'Doorway'}  PRESSURE ${Math.round(pr)}%\nTURN ${G.turn}${G.contact ? `   ACCORD IN ${Math.max(0, G.accordTurn - G.turn)}` : ''}${G.move ? `\nUNDER WAY to ${secName(G.sectors[G.move.to])}: ${G.move.eta}t` : ''}`,
+      `SCRAP ${G.stock.scrap}/${c.scrap}  CIRCUITS ${G.stock.circ}/${c.circ}\nRATIONS ${G.stock.rat}/${c.rat}  AMMO ${G.stock.ammo}  KITS ${G.kits}\nPOWER gen ${G.pw.gen} / draw ${G.pw.dem}\nORBIT ${sun.band} · ${sun.inShadow ? 'ECLIPSE' : 'SUN'} ${sun.untilChange}t${homeInLowOrbit() ? ` · ALT ${Math.round(G.alt ?? 100)}%` : ''}\nAIR scrubbers ${at.cap} / floor ${at.area}\nLOC: ${m ? m.name + ' (' + BR[m.brand].cc + ')' : 'Doorway'}  PRESSURE ${Math.round(pr)}%\nTURN ${G.turn}${G.contact ? `   ACCORD IN ${Math.max(0, G.accordTurn - G.turn)}` : ''}${G.move ? `\nUNDER WAY to ${secName(G.sectors[G.move.to])}: ${G.move.eta}t` : ''}`,
     ) +
     (pr < 35 ? '\n<span class="bad">!! LOW PRESSURE: suit O2 draining !!</span>' : '') +
     (G.fab ? `\n<span class="info">FAB: ${RC[G.fab.r].n} ${G.fab.prog}/${RC[G.fab.r].t}</span>` : '');
