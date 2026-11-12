@@ -12,6 +12,7 @@ import { playerDied } from './end.js';
 import { atHatch, extTick } from './exterior-tick.js';
 import { addFx, hurtPlayer, occupied, stats } from './stats.js';
 import { directorTick } from './storyteller.js';
+import { watchTick } from './watch.js';
 import { allyTick, crewTick, HULL } from '../space/sectors.js';
 import { modIndex, removeBreach } from '../world/build.js';
 import { bfsInt, fov, intNext, los, pressureAt } from '../world/fov.js';
@@ -28,6 +29,7 @@ export function endTurn(quiet) {
   allyTick();
   hostileTick();
   extTick();
+  watchTick();
   directorTick();
   earthTick();
   objTick();

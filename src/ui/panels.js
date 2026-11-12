@@ -10,13 +10,14 @@ import { sunState } from '../sim/eclipse.js';
 import { atHatch } from '../sim/exterior-tick.js';
 import { stats } from '../sim/stats.js';
 import { refresh, waitN } from '../sim/turn.js';
+import { watchName } from '../sim/watch.js';
 import { power, shares } from '../space/earth.js';
 import { activeSweep, hackStatus, HULL, locked, SEC, secName, tagName } from '../space/sectors.js';
 import { $ } from './dom.js';
 import { showHelp } from './help-title.js';
 import { showLog } from './log-modal.js';
 import { C } from './palette.js';
-import { cycTags, focusOrbit, render, toggleRooms, uiOrbit } from './render.js';
+import { cssH, cssW, cycTags, focusOrbit, render, toggleRooms, uiOrbit } from './render.js';
 import { freePorts } from '../world/build.js';
 import { modAtP, pressureAt } from '../world/fov.js';
 import { caps, commsOnline, droneCap, hasOnline, machineStatus } from '../world/machines.js';
@@ -53,6 +54,32 @@ function fillScroll(el, html) {
   el.innerHTML = html;
   if (atBottom) el.scrollTop = el.scrollHeight;
   el.scrollLeft = x;
+}
+/** The watch list as side-panel rows: sectors open their contact menu, objects focus the EXTERIOR view. */
+export function watchHtml() {
+  const ws = G.watch || [];
+  if (!ws.length) return '';
+  return (
+    '<div class="sh">W A T C H</div>' +
+    ws
+      .map(w =>
+        w.kind === 'sec'
+          ? `<div class="row" data-sec="${w.id}"><span class="nm" style="color:#40e0ff">◎ ${esc(watchName(w))}</span></div>`
+          : `<div class="row" data-wobj="${w.id}"><span class="nm" style="color:#40e0ff">◎ ${esc(watchName(w))}</span></div>`,
+      )
+      .join('') +
+    '<div class="sh" style="margin-top:6px"></div>'
+  );
+}
+/** Show a tracked exterior object: switch to EXTERIOR, its sector, and centre on it. */
+export function focusWatched(id) {
+  const o = G.ext.objs.find(o => o.id === id);
+  if (!o) return;
+  V.sec = o.sec < 0 ? G.home : o.sec;
+  setTab('ext');
+  const ts = V.ets || 8;
+  V.ecam = { x: o.x - cssW / ts / 2, y: o.y - cssH / ts / 2 };
+  render();
 }
 export function updateUI() {
   if (!G) return;
@@ -222,7 +249,7 @@ function uiExt() {
   s += `<div>Free docking ports: ${freePorts().length} · Hull schematics: ${(G.schem || []).length} · Machine schematics: ${Object.keys(G.bp).filter(k => k.startsWith('k_')).length}</div>`;
   if (rog.length) s += `<div class="bad">Hostiles / turrets: ${rog.length}</div>`;
   s += `<div class="dim" style="margin-top:4px">Station: ${G.mods.length} sections from ${new Set(G.mods.map(m => m.brand)).size} makers</div>`;
-  $('#ctx2').innerHTML = s;
+  $('#ctx2').innerHTML = watchHtml() + s;
 }
 const repLabel = r =>
   r >= 60 ? 'ALLIED' : r >= 30 ? 'FRIENDLY' : r > -30 ? 'NEUTRAL' : r > -60 ? 'HOSTILE' : 'ENEMY';
