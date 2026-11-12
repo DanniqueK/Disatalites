@@ -1,5 +1,6 @@
 import { SAVE_VERSION } from './constants.js';
 import { log } from './messages.js';
+import { newSeed } from './rng.js';
 import { G, P, setG, setP, V } from './state.js';
 import { initLand } from '../space/earth.js';
 import { buildRegions, HULL } from '../space/sectors.js';
@@ -15,7 +16,13 @@ const LEGACY_KEYS = ['k9save9'];
  * Upgrades a save from version N to N + 1. Add one entry per format change and bump SAVE_VERSION.
  * @type {Record<number, (data: { G: any, P: any }) => void>}
  */
-export const MIGRATIONS = {};
+export const MIGRATIONS = {
+  // v10: seeded RNG. Older runs get a fresh seed from here on.
+  9: d => {
+    d.G.seed = newSeed();
+    d.G.rng = d.G.seed;
+  },
+};
 
 /**
  * @typedef {Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>} SaveStorage

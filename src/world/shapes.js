@@ -1,4 +1,5 @@
 import { CONN } from '../core/data.js';
+import { random } from '../core/rng.js';
 import { D4, D8, rr, shuffle } from '../core/util.js';
 
 export function genShape(kind) {
@@ -35,7 +36,7 @@ export function genShape(kind) {
         const a = rr(1, 3);
         rect(3 + a, 3, 3, 3 + 2 * a);
         rect(3, 3 + a, 3 + 2 * a, 3);
-        if (Math.random() < 0.4) rect(3 + a - 1, 3 + a - 1, 5, 5);
+        if (random() < 0.4) rect(3 + a - 1, 3 + a - 1, 5, 5);
         break;
       }
       case 'oct': {

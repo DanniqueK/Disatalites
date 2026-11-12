@@ -28,7 +28,20 @@ export default [
           ],
         },
       ],
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'Math',
+          property: 'random',
+          message:
+            'Use random() from core/rng.js (seeded), or fxRandom() for visuals that never change game state.',
+        },
+      ],
     },
+  },
+  {
+    files: ['src/core/rng.js'],
+    rules: { 'no-restricted-properties': 'off' },
   },
   {
     files: ['test/**/*.js', '*.config.js'],

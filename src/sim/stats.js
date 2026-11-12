@@ -1,6 +1,7 @@
 import { EN, IT, mk } from '../core/data.js';
 import { emit } from '../core/events.js';
 import { cmb, log } from '../core/messages.js';
+import { random } from '../core/rng.js';
 import { G, P } from '../core/state.js';
 import { idx, pick, rnd, rr } from '../core/util.js';
 import { HULL } from '../space/sectors.js';
@@ -23,7 +24,7 @@ export function hurtPlayer(dmg, src) {
   const pool = [{ w: 100, it: null }];
   for (const sl of ['tool', 'weap', 'suit'])
     for (const it of P.eq[sl]) pool.push({ w: IT[it.key].cov || 30, it, sl });
-  let r = Math.random() * pool.reduce((s, p) => s + p.w, 0),
+  let r = random() * pool.reduce((s, p) => s + p.w, 0),
     ch = pool[0];
   for (const p of pool) {
     r -= p.w;
@@ -61,8 +62,8 @@ function killActor(a) {
   log(`${d.n} destroyed.`);
   G.stat.kills++;
   if (G.target === a.id) G.target = null;
-  if (d.drop && Math.random() < 0.35) dropItem(a.x, a.y, mk(pick(d.drop), 0.4 + Math.random() * 0.5));
-  if (Math.random() < 0.4) G.crates[idx(a.x, a.y)] = { scrap: rr(2, 5), circ: rnd(3) };
+  if (d.drop && random() < 0.35) dropItem(a.x, a.y, mk(pick(d.drop), 0.4 + random() * 0.5));
+  if (random() < 0.4) G.crates[idx(a.x, a.y)] = { scrap: rr(2, 5), circ: rnd(3) };
 }
 export const actorAt = (x, y) => G.actors.find(a => a.hp > 0 && a.x === x && a.y === y);
 export const occupied = (x, y) =>

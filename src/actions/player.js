@@ -2,6 +2,7 @@ import { releaseTow } from './exterior.js';
 import { T, WALK } from '../core/constants.js';
 import { BR, CHAT, DT, EN, FAC, IT, LORE, MC, MD, RC, SATS, SMALL } from '../core/data.js';
 import { cmb, log } from '../core/messages.js';
+import { random } from '../core/rng.js';
 import { G, M, P, V } from '../core/state.js';
 import { cheb, clamp, idx, inB, pick, roll, rr } from '../core/util.js';
 import { releaseSat } from '../sim/earth-tick.js';
@@ -40,7 +41,7 @@ export function playerMove(dx, dy) {
     cm.y = P.y;
     P.x = nx;
     P.y = ny;
-    if (Math.random() < 0.25) log(`${cm.name}: "${pick(CHAT[cm.role])}"`, 'lore');
+    if (random() < 0.25) log(`${cm.name}: "${pick(CHAT[cm.role])}"`, 'lore');
     return endTurn();
   }
   const t = M.map[idx(nx, ny)];
@@ -122,7 +123,7 @@ function playerMelee(a) {
   }
   const e = EN[a.type].eva,
     ch = clamp(75 - e, 10, 95),
-    hit = Math.random() * 100 < ch;
+    hit = random() * 100 < ch;
   cmb(`${wd.n} (75-${e}=${ch}%) ${hit ? 'Hit' : 'Miss'}`, hit ? 'good' : '');
   if (hit) damageActor(a, roll(wd.d));
   endTurn();
@@ -183,7 +184,7 @@ export function fire() {
     let hits = 0;
     for (let s = 0; s < (d.shots || 1); s++) {
       if (t.hp <= 0) break;
-      if (Math.random() * 100 < ch) {
+      if (random() * 100 < ch) {
         hits++;
         damageActor(t, roll(d.d));
       }
@@ -663,7 +664,7 @@ function claimNode(m) {
       log('Claim halted: the section is venting again.', 'warn');
       break;
     }
-    if (mod.haywire && !m.lock && Math.random() < 0.06) {
+    if (mod.haywire && !m.lock && random() < 0.06) {
       m.lock = 1;
       lockdown(mod);
     }

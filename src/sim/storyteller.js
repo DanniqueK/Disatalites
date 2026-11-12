@@ -1,6 +1,7 @@
 import { T } from '../core/constants.js';
 import { MD } from '../core/data.js';
 import { log } from '../core/messages.js';
+import { random } from '../core/rng.js';
 import { G, M, P } from '../core/state.js';
 import { idx, pick, pickW, rnd, rr, shuffle } from '../core/util.js';
 import { occupied } from './stats.js';
@@ -249,7 +250,7 @@ const INC = [
         circ: rr(3, 6),
         rat: rr(1, 3),
         ammo: rr(0, 10),
-        items: Math.random() < 0.4 ? ['medkit'] : [],
+        items: random() < 0.4 ? ['medkit'] : [],
       });
       log('An old supply cache from a dead launch program is in range.', 'info');
     },
@@ -264,7 +265,7 @@ export function directorTick() {
     if (G.ext.objs.filter(o => o.kind === 'debris').length < 4) addDebris(true);
   }
   if (G.turn < D.rest) return;
-  if (Math.random() > 0.015 + D.tension * 0.02) return;
+  if (random() > 0.015 + D.tension * 0.02) return;
   const str = P.hp < P.hpMax * 0.4 || G.stock.scrap < 5 || G.stock.rat < 1;
   const inc = pickW(
     INC.filter(i => i.can()),

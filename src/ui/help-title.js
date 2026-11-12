@@ -1,7 +1,7 @@
 import { OBJ } from '../core/data.js';
 import { log } from '../core/messages.js';
 import { hasSave, loadSave, setAutosave } from '../core/save.js';
-import { V } from '../core/state.js';
+import { G, V } from '../core/state.js';
 import { refresh } from '../sim/turn.js';
 import { HULL } from '../space/sectors.js';
 import { modalBtns, showModal } from './log-modal.js';
@@ -49,7 +49,7 @@ EARTH view (politics):
  Legacy satellites shoot settlements and satellites of anyone not in their IFF tables. Spoofing tags is your strongest lever.
 
 Events are paced by a storyteller: quiet stretches, then trouble, then time to recover. It goes easier on you when you are struggling.
-Keys: Z/X/O/C views, T tags, L log, . or SPACE wait, ? help. Autosaves in this browser.`,
+Keys: Z/X/O/C views, T tags, L log, . or SPACE wait, ? help. Autosaves in this browser.${G && G.seed != null ? `\n\nRun seed: ${G.seed} (mention it when reporting a bug)` : ''}`,
     [{ t: 'Close' }],
   );
 }

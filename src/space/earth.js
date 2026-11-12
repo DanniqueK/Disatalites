@@ -2,6 +2,7 @@ import { EGH, EGW } from '../core/constants.js';
 import { ANCH, BLOBS, FAC, isRival, LEGACY } from '../core/data.js';
 import { emit } from '../core/events.js';
 import { log } from '../core/messages.js';
+import { random } from '../core/rng.js';
 import { G, M } from '../core/state.js';
 import { cheb, clamp, D4, pick, rnd, rr, shuffle } from '../core/util.js';
 
@@ -39,7 +40,7 @@ export function initEarth() {
   initLand();
   G.owner = new Array(EGW * EGH).fill(-1);
   G.hab = new Array(EGW * EGH).fill(0);
-  const seed = Math.random() * 100;
+  const seed = random() * 100;
   for (let i = 0; i < EGW * EGH; i++) {
     if (!M.land[i]) continue;
     const x = i % EGW,
@@ -57,7 +58,7 @@ export function initEarth() {
         const i = xx + y * EGW;
         if (!M.land[i]) continue;
         const d = cheb(x, y, hx, hy);
-        if (d <= 1 || Math.random() < 0.5) {
+        if (d <= 1 || random() < 0.5) {
           G.hab[i] = 1;
           if (d <= 1) G.owner[i] = fi;
         }
@@ -147,12 +148,12 @@ export function territoryTick() {
       const n = pick(nbrs(i));
       if (!M.land[n]) continue;
       if (!G.hab[n]) {
-        if (satNear(f, n, ['WEATHER']) && Math.random() < 0.12) G.hab[n] = 1;
+        if (satNear(f, n, ['WEATHER']) && random() < 0.12) G.hab[n] = 1;
         continue;
       }
       const o = G.owner[n];
       if (o < 0) {
-        if (Math.random() < 0.3 + satNear(f, n) * 0.06) G.owner[n] = f;
+        if (random() < 0.3 + satNear(f, n) * 0.06) G.owner[n] = f;
       } else if (o !== f && isRival(f, o) && !isHome(o, n)) {
         const atk = power(f) + satNear(f, n, ['RECON', 'COMMS']) * 6 + rnd(14),
           def = power(o) + satNear(o, n, ['RECON', 'COMMS']) * 6 + rnd(14) + 6;
@@ -170,12 +171,12 @@ export function territoryTick() {
     const nb = nbrs(i).some(n => G.hab[n] || G.owner[n] >= 0);
     if (!nb) continue;
     const w = FAC.some((F, f) => satNear(f, i, ['WEATHER']));
-    if (Math.random() < (w ? 0.35 : 0.08)) {
+    if (random() < (w ? 0.35 : 0.08)) {
       G.hab[i] = 1;
       healed++;
     }
   }
-  if (healed >= 3 && Math.random() < 0.3)
+  if (healed >= 3 && random() < 0.3)
     log('Surface report: the dead zones are shrinking. Grass where there was glass.', 'info');
 }
 export function legacyTick() {
@@ -191,11 +192,11 @@ export function legacyTick() {
       dx = Math.min(dx, EGW - dx);
       if (Math.max(dx, Math.abs(y - L.y)) <= L.r) hits.push(i);
     }
-    if (hits.length && Math.random() < 0.3) {
+    if (hits.length && random() < 0.3) {
       const i = pick(hits),
         o = G.owner[i];
       G.owner[i] = -1;
-      if (Math.random() < 0.3) G.hab[i] = 0;
+      if (random() < 0.3) G.hab[i] = 0;
       emit('strike', { x: i % EGW, y: (i / EGW) | 0 });
       if (L.known)
         log(`${L.n} strikes a ${FAC[o].sh} settlement in ${cellName(i % EGW, (i / EGW) | 0)}.`, 'warn');
@@ -204,7 +205,7 @@ export function legacyTick() {
       if (L.tags.includes(s.f)) continue;
       let dx = Math.abs(s.cx - L.x);
       dx = Math.min(dx, EGW - dx);
-      if (Math.max(dx, Math.abs(s.cy - L.y)) <= L.r && Math.random() < 0.07) {
+      if (Math.max(dx, Math.abs(s.cy - L.y)) <= L.r && random() < 0.07) {
         G.orbit = G.orbit.filter(o => o !== s);
         G.stat.lost++;
         log(

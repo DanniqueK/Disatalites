@@ -26,6 +26,7 @@ function memoryStorage() {
 }
 
 let store;
+const realMigrations = { ...MIGRATIONS };
 beforeEach(() => {
   store = memoryStorage();
   setStorage(store);
@@ -34,6 +35,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   for (const k of Object.keys(MIGRATIONS)) delete MIGRATIONS[k];
+  Object.assign(MIGRATIONS, realMigrations);
 });
 
 describe('save and load', () => {
@@ -74,6 +76,17 @@ describe('save and load', () => {
     expect(res.data.G.b).toBe(2);
   });
 
+  it('gives v9 saves (before the seeded RNG) a seed', () => {
+    const data = JSON.parse(serialize());
+    data.G.v = 9;
+    delete data.G.seed;
+    delete data.G.rng;
+    const res = parseSave(JSON.stringify(data));
+    expect(res.ok).toBe(true);
+    expect(res.data.G.seed).toBeTypeOf('number');
+    expect(res.data.G.rng).toBe(res.data.G.seed);
+  });
+
   it.each([
     ['{"G":', 'corrupt'],
     ['{"x":1}', 'not a KESTREL-9 save'],
@@ -87,7 +100,7 @@ describe('save and load', () => {
     const data = JSON.parse(serialize());
     data.G.v = SAVE_VERSION + 1;
     expect(parseSave(JSON.stringify(data)).reason).toContain('newer version');
-    data.G.v = SAVE_VERSION - 1;
+    data.G.v = 8;
     expect(parseSave(JSON.stringify(data)).reason).toContain('too old');
   });
 

@@ -1,6 +1,7 @@
 import { SAVE_VERSION, T, WH, WW } from '../core/constants.js';
 import { BR, BRANDS, EN, FAC, mk } from '../core/data.js';
 import { log } from '../core/messages.js';
+import { fxRandom, newSeed, random } from '../core/rng.js';
 import { G, M, P, setG, setP } from '../core/state.js';
 import { cheb, D8, idx, pick, rnd, rr, shuffle } from '../core/util.js';
 import { initEarth } from '../space/earth.js';
@@ -11,9 +12,15 @@ import { fov } from './fov.js';
 import { dropItem } from './machines.js';
 import { makePack, packFree } from './packs.js';
 
-export function newGame(start) {
+/**
+ * @param {'clone' | 'cryo'} start
+ * @param {number} [seed] Same seed and same player actions give the same run.
+ */
+export function newGame(start, seed = newSeed()) {
   setG({
     v: SAVE_VERSION,
+    seed: seed >>> 0,
+    rng: seed >>> 0,
     start,
     turn: 0,
     nid: 1,
@@ -127,20 +134,20 @@ export function newGame(start) {
     cy = Math.floor(WH / 2) - Math.floor(p0.shape.h / 2);
   dockPack(p0, null, { rot: rnd(4), pi: -1, ox: cx, oy: cy }, true);
   const order = shuffle(['junction', 'power', 'storage', 'life', 'workshop', 'hab']);
-  if (Math.random() < 0.5) order.push('hydro');
+  if (random() < 0.5) order.push('hydro');
   for (let k = 0; k < rr(1, 2); k++) order.splice(rr(1, order.length), 0, 'tube');
   const hay = shuffle(['life', 'workshop', 'hab', 'hydro']).slice(0, 2);
   for (const fn of order) {
     const pk = makePack(fn, fn === 'tube' ? pick(['scav', 'aster', 'volkov']) : pick(BRANDS), {
       cond: t =>
         t === 'node'
-          ? Math.random() < 0.3
+          ? random() < 0.3
             ? rr(30, 50)
             : rr(60, 75)
           : t === 'junc'
             ? fn === 'tube'
               ? rr(55, 85)
-              : Math.random() < 0.5
+              : random() < 0.5
                 ? rr(30, 55)
                 : rr(60, 80)
             : cf(t),
@@ -148,7 +155,7 @@ export function newGame(start) {
     });
     pk.ctl = fn === 'tube';
     pk.haywire = hay.includes(fn);
-    if (hay.includes(fn) && fn !== 'hydro' && Math.random() < 0.7) {
+    if (hay.includes(fn) && fn !== 'hydro' && random() < 0.7) {
       const f = packFree(pk).find(([x, y]) => pk.shape.ports.every(p => cheb(p.x, p.y, x, y) > 3));
       if (f) pk.actors.push({ type: 'feral', lx: f[0], ly: f[1], hp: EN.feral.hp });
     }
@@ -187,7 +194,7 @@ export function newGame(start) {
   if (sf[5]) dropItem(sf[5][0], sf[5][1], mk('dorm_util'));
   if (start === 'clone' && sf[6]) dropItem(sf[6][0], sf[6][1], mk('pistol', 0.6));
   addBreachMod(G.mods.indexOf(pick([mOf('power'), mOf('junction'), mOf('life')])));
-  if (Math.random() < 0.5) addBreachMod(G.mods.indexOf(mOf('hab')));
+  if (random() < 0.5) addBreachMod(G.mods.indexOf(mOf('hab')));
   for (const a of G.actors) a.room = -1;
   const pod = G.machines.find(m => m.type === 'pod' || m.type === 'cryo');
   for (const [dx, dy] of D8) {
@@ -225,5 +232,5 @@ export function newGame(start) {
 }
 export function initStars() {
   M.stars = new Float32Array(WW * WH);
-  for (let i = 0; i < WW * WH; i++) if (Math.random() < 0.07) M.stars[i] = 0.2 + Math.random() * 0.8;
+  for (let i = 0; i < WW * WH; i++) if (fxRandom() < 0.07) M.stars[i] = 0.2 + fxRandom() * 0.8;
 }

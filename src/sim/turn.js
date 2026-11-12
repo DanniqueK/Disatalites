@@ -2,6 +2,7 @@ import { T } from '../core/constants.js';
 import { EN, hasAI, MD, mk, OBJ, RC } from '../core/data.js';
 import { emit } from '../core/events.js';
 import { cmb, log } from '../core/messages.js';
+import { random } from '../core/rng.js';
 import { save } from '../core/save.js';
 import { G, M, P, V } from '../core/state.js';
 import { cheb, clamp, D8, idx, inB, pick, roll } from '../core/util.js';
@@ -308,14 +309,14 @@ function actOne(a) {
   const S = stats();
   if (sees && d.w.melee && dp === 1) {
     const ch = clamp(d.w.acc - S.eva, 8, 95),
-      hit = Math.random() * 100 < ch;
+      hit = random() * 100 < ch;
     cmb(`${d.n} strikes (${ch}%) ${hit ? 'Hit' : 'Miss'}`, hit ? 'bad' : '');
     if (hit) hurtPlayer(roll(d.w.d), d.n);
     return;
   }
   if (sees && d.w.r && dp <= d.w.r && los(a.x, a.y, P.x, P.y)) {
     const ch = clamp(d.w.acc - S.eva, 8, 95),
-      hit = Math.random() * 100 < ch;
+      hit = random() * 100 < ch;
     addFx({ k: 'tr', x0: a.x, y0: a.y, x1: P.x, y1: P.y, c: '#ff8a6a', dur: 200 });
     cmb(`${d.n} fires (${ch}%) ${hit ? 'Hit' : 'Miss'}`, hit ? 'bad' : '');
     if (hit) hurtPlayer(roll(d.w.d), d.n);
@@ -340,7 +341,7 @@ function actOne(a) {
       a.x = best[0];
       a.y = best[1];
     }
-  } else if (Math.random() < 0.4) {
+  } else if (random() < 0.4) {
     const [dx, dy] = pick(D8);
     const nx = a.x + dx,
       ny = a.y + dy;
