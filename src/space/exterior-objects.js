@@ -47,7 +47,12 @@ export function addDebris(near) {
     kind: 'debris',
     x,
     y,
-    res: { scrap: rr(5, 12), circ: rr(1, 5), rat: random() < 0.25 ? rr(1, 3) : 0 },
+    res: {
+      scrap: rr(5, 12),
+      circ: rr(1, 5),
+      rat: random() < 0.25 ? rr(1, 3) : 0,
+      water: random() < 0.35 ? rr(2, 5) : 0,
+    },
   });
 }
 export function addWreck(dt) {
@@ -113,7 +118,7 @@ export function spawnDrone(dt, rack) {
     hp: D.hp,
     max: D.hp,
     task: { type: 'idle' },
-    cargo: { scrap: 0, circ: 0, rat: 0 },
+    cargo: { scrap: 0, circ: 0, rat: 0, water: 0 },
     pod: null,
     home: rack ? rack.id : null,
   });

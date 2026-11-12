@@ -99,6 +99,17 @@ describe('save and load', () => {
     expect(res.data.G.kits).toBe(1);
   });
 
+  it('gives format 13 saves water and hydration', () => {
+    const data = JSON.parse(serialize());
+    data.G.v = 13;
+    delete data.G.stock.water;
+    delete data.P.hyd;
+    const res = parseSave(JSON.stringify(data));
+    expect(res.ok).toBe(true);
+    expect(res.data.G.stock.water).toBe(12);
+    expect(res.data.P.hyd).toBe(80);
+  });
+
   it('rejects saves from before the hallway station layout (format 10 and older)', () => {
     const data = JSON.parse(serialize());
     data.G.v = 10;

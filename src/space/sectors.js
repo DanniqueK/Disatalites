@@ -32,7 +32,7 @@ import { G, M, P, V } from '../core/state.js';
 import { cheb, clamp, D8, idx, inB, pick, pickW, rnd, rr, shuffle } from '../core/util.js';
 import { killDrone } from '../sim/exterior-tick.js';
 import { occupied } from '../sim/stats.js';
-import { endTurn, refresh } from '../sim/turn.js';
+import { drinkWater, endTurn, refresh } from '../sim/turn.js';
 import { addRogue, objById, randSpace, removeObj, stationBox } from './exterior-objects.js';
 import { addBreachMod, derFits, nearestVoid, removeBreach } from '../world/build.js';
 import { pressureAt } from '../world/fov.js';
@@ -311,6 +311,7 @@ export function genSectors() {
             scrap: rr(6, 14) * (rich ? 2 : 1),
             circ: rr(2, 6) * (rich ? 2 : 1),
             rat: random() < 0.3 ? rr(1, 3) : 0,
+            water: random() < 0.4 ? rr(2, 6) : 0,
           },
           seen: false,
         });
@@ -777,6 +778,13 @@ export function crewTick() {
       G.stock.rat--;
       G.crew.forEach(c => (c.starve = 0));
     } else G.crew.forEach(c => (c.starve = (c.starve || 0) + 25));
+  }
+  // The crew drink a little more often than they eat; no water hurts like no food.
+  G.crewWater = (G.crewWater || 0) + 0.05 * G.crew.length;
+  if (G.crewWater >= 1) {
+    G.crewWater -= 1;
+    if (G.stock.water > 0) drinkWater();
+    else G.crew.forEach(c => (c.starve = (c.starve || 0) + 25));
   }
   const foes = G.ext.objs.some(o => o.kind === 'rogue' && o.sec === HULL);
   for (const c of G.crew.slice()) {

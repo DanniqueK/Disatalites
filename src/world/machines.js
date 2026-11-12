@@ -23,7 +23,7 @@ export function addStock(k, n) {
 }
 export function caps() {
   const l = G.machines.filter(m => m.type === 'locker').length;
-  return { scrap: 50 + 50 * l, circ: 25 + 25 * l, rat: 8 + 6 * l, ammo: 40 + 60 * l };
+  return { scrap: 50 + 50 * l, circ: 25 + 25 * l, rat: 8 + 6 * l, water: 20 + 15 * l, ammo: 40 + 60 * l };
 }
 export function dropItem(x, y, it) {
   const i = idx(x, y);

@@ -31,6 +31,12 @@ export const MIGRATIONS = {
         dr.task = { type: 'idle' };
       }
   },
+  // v14: water. Old stations get a starting supply and a full canteen; drone cargo holds water.
+  13: d => {
+    d.G.stock.water = d.G.stock.water ?? 12;
+    d.P.hyd = d.P.hyd ?? 80;
+    for (const dr of d.G.ext.drones) if (dr.cargo) dr.cargo.water = dr.cargo.water || 0;
+  },
 };
 
 /**

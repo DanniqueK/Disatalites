@@ -60,8 +60,11 @@ describe('placing gear', () => {
     game(4);
     ownEverything();
     const st = roomOf('storage');
-    const nearDoor = floorOf(st).find(c =>
-      [-1, 0, 1].some(dy => [-1, 0, 1].some(dx => M.map[idx(c.x + dx, c.y + dy)] === T.DOOR)),
+    const nearDoor = floorOf(st).find(
+      c =>
+        !G.crates[idx(c.x, c.y)] &&
+        !(G.items[idx(c.x, c.y)] || []).length &&
+        [-1, 0, 1].some(dy => [-1, 0, 1].some(dx => M.map[idx(c.x + dx, c.y + dy)] === T.DOOR)),
     );
     expect(placeProblem('locker', nearDoor.x, nearDoor.y)).toBe('doorways stay clear');
   });

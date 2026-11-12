@@ -108,6 +108,7 @@ export function updateUI() {
     bar(`BODY   ${Math.ceil(P.hp)}/${P.hpMax}`, P.hp, P.hpMax, '#1c6a2a') +
     bar(`SUIT O2 ${Math.floor(P.o2)}/${S.o2Max}`, P.o2, S.o2Max, '#2a4a6a') +
     bar(`NUTRITION ${Math.floor(P.nut)}`, P.nut, 100, '#6a5a1a') +
+    bar(`HYDRATION ${Math.floor(P.hyd ?? 80)}`, P.hyd ?? 80, 100, '#1a4a7a') +
     bar(
       `BATTERY ${Math.floor(G.bat)}/${G.pw.cap}  (${G.pw.gen >= G.pw.dem ? '+' : ''}${G.pw.gen - G.pw.dem})`,
       G.bat,
@@ -125,7 +126,8 @@ export function updateUI() {
   const at = G.atmo || { cap: 0, area: 1 };
   $('#res').innerHTML =
     esc(
-      `SCRAP ${G.stock.scrap}/${c.scrap}  CIRCUITS ${G.stock.circ}/${c.circ}\nRATIONS ${G.stock.rat}/${c.rat}  AMMO ${G.stock.ammo}  KITS ${G.kits}\nPOWER gen ${G.pw.gen} / draw ${G.pw.dem}\nORBIT ${sun.band} · ${sun.inShadow ? 'ECLIPSE' : 'SUN'} ${sun.untilChange}t${homeInLowOrbit() ? ` · ALT ${Math.round(G.alt ?? 100)}%` : ''}\nAIR scrubbers ${at.cap} / floor ${at.area}\nLOC: ${m ? m.name + ' (' + BR[m.brand].cc + ')' : 'Doorway'}  PRESSURE ${Math.round(pr)}%\nTURN ${G.turn}${G.contact ? `   ACCORD IN ${Math.max(0, G.accordTurn - G.turn)}` : ''}${G.move ? `\nUNDER WAY to ${secName(G.sectors[G.move.to])}: ${G.move.eta}t` : ''}`,
+      `SCRAP ${G.stock.scrap}/${c.scrap}  CIRCUITS ${G.stock.circ}/${c.circ}\nRATIONS ${G.stock.rat}/${c.rat}  WATER ${G.stock.water ?? 0}/${c.water}
+AMMO ${G.stock.ammo}  KITS ${G.kits}\nPOWER gen ${G.pw.gen} / draw ${G.pw.dem}\nORBIT ${sun.band} · ${sun.inShadow ? 'ECLIPSE' : 'SUN'} ${sun.untilChange}t${homeInLowOrbit() ? ` · ALT ${Math.round(G.alt ?? 100)}%` : ''}\nAIR scrubbers ${at.cap} / floor ${at.area}\nLOC: ${m ? m.name + ' (' + BR[m.brand].cc + ')' : 'Doorway'}  PRESSURE ${Math.round(pr)}%\nTURN ${G.turn}${G.contact ? `   ACCORD IN ${Math.max(0, G.accordTurn - G.turn)}` : ''}${G.move ? `\nUNDER WAY to ${secName(G.sectors[G.move.to])}: ${G.move.eta}t` : ''}`,
     ) +
     (pr < 35 ? '\n<span class="bad">!! LOW PRESSURE: suit O2 draining !!</span>' : '') +
     (G.fab ? `\n<span class="info">FAB: ${RC[G.fab.r].n} ${G.fab.prog}/${RC[G.fab.r].t}</span>` : '');
