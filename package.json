@@ -10,7 +10,8 @@
     "test": "vitest run",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test"
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test",
+    "site": "node scripts/build-site.mjs _site dev"
   },
   "engines": {
     "node": ">=20"

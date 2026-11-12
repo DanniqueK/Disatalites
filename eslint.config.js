@@ -6,7 +6,7 @@ import globals from 'globals';
 const CORE = ['src/core/**/*.js', 'src/world/**/*.js', 'src/space/**/*.js', 'src/sim/**/*.js'];
 
 export default [
-  { ignores: ['node_modules/', 'coverage/'] },
+  { ignores: ['node_modules/', 'coverage/', '_site/'] },
   js.configs.recommended,
   {
     files: ['src/**/*.js'],
@@ -44,7 +44,7 @@ export default [
     rules: { 'no-restricted-properties': 'off' },
   },
   {
-    files: ['test/**/*.js', '*.config.js'],
+    files: ['test/**/*.js', 'scripts/**/*.mjs', '*.config.js'],
     languageOptions: { globals: globals.node },
   },
   {
