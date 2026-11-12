@@ -41,6 +41,7 @@ import {
   orbitTapAt,
   render,
   resize,
+  toggleRooms,
   TS,
 } from './ui/render.js';
 import { machineStatus } from './world/machines.js';
@@ -402,6 +403,7 @@ document.addEventListener('keydown', e => {
   if (k === '?' || k === '/') return showHelp();
   if (k === 'r' || k === 'R') return waitN(10);
   if (k === 't') return cycTags();
+  if (k === 'v' && V.tab === 'station') return toggleRooms();
   if (k === 'L') return showLog();
   if (V.tab === 'ext') {
     if (KD[e.code] && V.ecam) {

@@ -7,6 +7,7 @@ import {
   EN,
   ER,
   FAC,
+  FN,
   hasAI,
   isHall,
   IT,
@@ -16,6 +17,7 @@ import {
   RC,
   RINGS,
   ROLE,
+  ROOM_CAT,
   SEC_T,
   stById,
   TAGK,
@@ -53,6 +55,7 @@ import { setTab } from './panels.js';
 import { freePorts, hullNear, modById, modCells, modIndex } from '../world/build.js';
 import { modBreaches } from '../world/control.js';
 import { commsOnline, ctlOK, hasOnline, machineStatus, online } from '../world/machines.js';
+import { roomStatus } from '../world/rooms.js';
 import { toWorld } from '../world/shapes.js';
 
 export const cv = $('#map'),
@@ -189,7 +192,11 @@ function renderStation() {
   ctx.font = 'bold ' + FONT(TS * 0.95);
   glyph('@', sx(P.x), sy(P.y), '#eafff0', TS);
   ctx.font = FONT(TS * 0.9);
-  if (V.tags) stationTags(sx, sy);
+  if (V.rooms) roomsOverlay(sx, sy, TS);
+  else if (V.tags) roomNames(sx, sy, TS);
+  ctx.font = FONT(TS * 0.9);
+  ctx.textAlign = 'center';
+  if (V.tags && !V.rooms) stationTags(sx, sy);
   const t = G.actors.find(a => a.id === G.target && a.hp > 0);
   if (t && M.vis[idx(t.x, t.y)]) {
     ctx.strokeStyle = '#ff3a3a';
@@ -258,6 +265,78 @@ function shade(c) {
     b = ((n & 255) * 0.42) | 0;
   return (shadeCache[c] = `rgb(${r},${g},${b})`);
 }
+const tintCache = {};
+/** '#rrggbb' at alpha `a`, as an rgba() string. */
+function tint(c, a) {
+  const k = c + a;
+  if (tintCache[k]) return tintCache[k];
+  const n = parseInt(c.slice(1), 16);
+  return (tintCache[k] = `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`);
+}
+/** Floor cells, bounding box and centre of every room you have seen part of. */
+function seenRooms() {
+  const out = [];
+  G.mods.forEach((m, mi) => {
+    const cells = modCells(m).filter(c => c.c === '.' && G.seen[idx(c.x, c.y)]);
+    if (!cells.length) return;
+    const all = modCells(m);
+    const xs = all.map(c => c.x),
+      ys = all.map(c => c.y);
+    out.push({
+      mi,
+      cells,
+      cx: (Math.min(...xs) + Math.max(...xs) + 1) / 2,
+      cy: (Math.min(...ys) + Math.max(...ys) + 1) / 2,
+    });
+  });
+  return out;
+}
+/** Room names, faint, at the centre of each room you have seen (not hallways). */
+function roomNames(sx, sy, ts) {
+  ctx.font = FONT(Math.max(9, Math.min(ts, 22) * 0.55));
+  ctx.textAlign = 'center';
+  for (const r of seenRooms()) {
+    const m = G.mods[r.mi];
+    if (isHall(m.fn)) continue;
+    ctx.fillStyle = tint(roomStatus(r.mi).color, 0.55);
+    ctx.fillText(m.name.toUpperCase(), sx(r.cx), sy(r.cy));
+  }
+}
+/** ROOMS overlay: each room coloured by category, with its name and what is wrong with it. */
+export function toggleRooms() {
+  V.rooms = !V.rooms;
+  render();
+}
+function roomsOverlay(sx, sy, ts) {
+  const rooms = seenRooms();
+  for (const r of rooms) {
+    const st = roomStatus(r.mi);
+    ctx.fillStyle = tint(st.color, st.hall ? 0.12 : 0.3);
+    for (const c of r.cells) ctx.fillRect(sx(c.x), sy(c.y), ts, ts);
+  }
+  const fs = Math.max(10, Math.min(ts, 22) * 0.6);
+  ctx.textAlign = 'center';
+  for (const r of rooms) {
+    const st = roomStatus(r.mi);
+    if (st.hall && !st.problems.length) continue;
+    const lines = [st.name.toUpperCase(), st.problems.length ? st.problems.slice(0, 2).join(' · ') : 'OK'];
+    if (!st.hall) lines.push(`AIR ${st.pressure}%`);
+    ctx.font = FONT(fs);
+    const w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 10,
+      h = lines.length * (fs + 2) + 6;
+    const px = sx(r.cx) - w / 2,
+      py = sy(r.cy) - h / 2;
+    ctx.fillStyle = 'rgba(0,0,0,.78)';
+    ctx.fillRect(px, py, w, h);
+    ctx.strokeStyle = st.color;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(px + 0.5, py + 0.5, w - 1, h - 1);
+    lines.forEach((l, i) => {
+      ctx.fillStyle = i === 0 ? st.color : i === 1 ? (st.problems.length ? '#ffb040' : '#2fdc4f') : '#9ab0a0';
+      ctx.fillText(l, sx(r.cx), py + 3 + (fs + 2) * i + fs / 2 + 1);
+    });
+  }
+}
 function tile(x, y, px, py, v, ts) {
   const i = idx(x, y),
     t = M.map[i];
@@ -287,6 +366,10 @@ function tile(x, y, px, py, v, ts) {
               ? B.floor
               : '#050805';
       ctx.fillRect(px, py, ts, ts);
+      if (m && m.ctl && pr >= 35) {
+        ctx.fillStyle = tint(ROOM_CAT[(FN[m.fn] && FN[m.fn].cat) || 'hall'].c, v ? 0.11 : 0.05);
+        ctx.fillRect(px, py, ts, ts);
+      }
       glyph(B.fg, px, py, v ? B.fc : shade(B.fc), ts);
       break;
     }

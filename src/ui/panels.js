@@ -14,7 +14,7 @@ import { activeSweep, hackStatus, HULL, locked, SEC, secName, tagName } from '..
 import { $ } from './dom.js';
 import { showHelp } from './help-title.js';
 import { showLog } from './log-modal.js';
-import { cycTags, focusOrbit, render, uiOrbit } from './render.js';
+import { cycTags, focusOrbit, render, toggleRooms, uiOrbit } from './render.js';
 import { freePorts } from '../world/build.js';
 import { modAtP, pressureAt } from '../world/fov.js';
 import { caps, commsOnline, droneCap, hasOnline, machineStatus } from '../world/machines.js';
@@ -67,7 +67,7 @@ export function updateUI() {
   });
   $('#tabInfo').textContent =
     V.tab === 'station'
-      ? 'WASD/arrows: move · click or U: use · bump: attack · R wait 10 · F fire · G get · Shift+L log · Z/X/O/C: views'
+      ? 'WASD/arrows: move · click or U: use · bump: attack · R wait 10 · F fire · G get · Shift+L log · V rooms · Z/X/O/C: views'
       : V.tab === 'ext'
         ? 'select a drone, then tap a target · tap a free door to build hallways and rooms · drag or WASD to pan'
         : V.tab === 'orbit'
@@ -287,11 +287,11 @@ function renderPad() {
     ]
       .map(([x, y, c]) => `<button data-a="mv:${x},${y}">${c}</button>`)
       .join('')}</div>
-    <div id="acts"><button class="fire" data-a="fire">FIRE</button><button data-a="target">TARGET</button><button data-a="get">GET</button><button data-a="eat">EAT</button><button data-a="log">LOG</button><button data-a="tags">TAGS</button><button data-a="w10">WAIT 10</button><button data-a="help">HELP</button></div>`;
+    <div id="acts"><button class="fire" data-a="fire">FIRE</button><button data-a="target">TARGET</button><button data-a="get">GET</button><button data-a="eat">EAT</button><button data-a="log">LOG</button><button data-a="tags">TAGS</button><button data-a="rooms">ROOMS</button><button data-a="w10">WAIT 10</button><button data-a="help">HELP</button></div>`;
   } else if (V.tab === 'orbit')
     h = `<button data-a="ozin">+</button><button data-a="ozout">−</button><button data-a="ofhome">FOCUS HOME</button><button data-a="ofdrone">FOCUS DRONE</button><button data-a="ofall">WHOLE MAP</button><button data-a="dprev">◀ DRONE</button><button data-a="dnext">DRONE ▶</button><button data-a="w1">WAIT 1</button><button data-a="w10">WAIT 10</button><button data-a="w50">WAIT 50</button><button data-a="log">LOG</button><button data-a="help">HELP</button>`;
   else if (V.tab === 'ext')
-    h = `<button data-a="homesec">HULL</button><button data-a="localsec">LOCAL</button><button data-a="dprev">◀ DRONE</button><button data-a="dnext">DRONE ▶</button><button data-a="recall">RECALL</button><button data-a="deploy">DEPLOY SAT</button><button data-a="zin">+</button><button data-a="zout">−</button><button data-a="center">CENTER</button><button data-a="w1">WAIT 1</button><button data-a="w10">WAIT 10</button><button data-a="w50">WAIT 50</button><button data-a="log">LOG</button><button data-a="tags">TAGS</button><button data-a="help">HELP</button>`;
+    h = `<button data-a="homesec">HULL</button><button data-a="localsec">LOCAL</button><button data-a="dprev">◀ DRONE</button><button data-a="dnext">DRONE ▶</button><button data-a="recall">RECALL</button><button data-a="deploy">DEPLOY SAT</button><button data-a="zin">+</button><button data-a="zout">−</button><button data-a="center">CENTER</button><button data-a="w1">WAIT 1</button><button data-a="w10">WAIT 10</button><button data-a="w50">WAIT 50</button><button data-a="log">LOG</button><button data-a="tags">TAGS</button><button data-a="rooms">ROOMS</button><button data-a="help">HELP</button>`;
   else
     h = `<button data-a="ozin">+</button><button data-a="ozout">−</button><button data-a="gfit">FIT</button><button data-a="w1">WAIT 1</button><button data-a="w10">WAIT 10</button><button data-a="w50">WAIT 50</button><button data-a="log">LOG</button><button data-a="help">HELP</button>`;
   if (p.dataset.h !== V.tab) {
@@ -316,6 +316,8 @@ export function padAction(a) {
       return eat();
     case 'tags':
       return cycTags();
+    case 'rooms':
+      return toggleRooms();
     case 'help':
       return showHelp();
     case 'log':
