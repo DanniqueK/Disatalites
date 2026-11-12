@@ -1,10 +1,19 @@
 import { OBJ } from '../core/data.js';
 import { log } from '../core/messages.js';
-import { hasSave, loadSave, setAutosave } from '../core/save.js';
+import {
+  autosaveOn,
+  hasSave,
+  importSave,
+  loadSave,
+  saveFileName,
+  serialize,
+  setAutosave,
+  storedSaveText,
+} from '../core/save.js';
 import { G, V } from '../core/state.js';
 import { refresh } from '../sim/turn.js';
 import { HULL } from '../space/sectors.js';
-import { modalBtns, showModal } from './log-modal.js';
+import { closeModal, modalBtns, showModal } from './log-modal.js';
 import { newGame } from '../world/new-game.js';
 
 export function showHelp() {
@@ -51,8 +60,45 @@ EARTH view (politics):
 
 Events are paced by a storyteller: quiet stretches, then trouble, then time to recover. It goes easier on you when you are struggling.
 Keys: Z/X/O/C views, T tags, V rooms overlay (STATION), Shift+L log (L also works outside the STATION view), . or SPACE wait, ? help. Autosaves in this browser.${G && G.seed != null ? `\n\nRun seed: ${G.seed} (mention it when reporting a bug)` : ''}`,
-    [{ t: 'Close' }],
+    autosaveOn() ? [{ t: 'Close' }, { t: 'Export save file', f: () => downloadSave() }] : [{ t: 'Close' }],
   );
+}
+function downloadText(name, text) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function downloadSave() {
+  const name = saveFileName();
+  downloadText(name, serialize());
+  log(`Save exported to ${name}.`, 'info');
+  refresh();
+}
+function pickSaveFile() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json';
+  input.onchange = async () => {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const res = importSave(await file.text());
+    closeModal();
+    if (res.ok) {
+      log(`Save imported from ${file.name}.`, 'info');
+      refresh();
+      return;
+    }
+    showModal(
+      'SAVE NOT LOADED',
+      `That file could not be loaded: ${res.reason}.`,
+      [{ t: 'Back to title', f: showTitle }],
+      true,
+    );
+  };
+  input.click();
+  showTitle();
 }
 export function showTitle() {
   const btns = [];
@@ -79,6 +125,15 @@ export function showTitle() {
     f: () => startNew('clone'),
   });
   btns.push({ t: 'Wake from CRYO (100 body, worn pistol + armor, one life)', f: () => startNew('cryo') });
+  btns.push({ t: 'Import a save file...', f: pickSaveFile });
+  if (hasSave())
+    btns.push({
+      t: 'Export the saved station to a file',
+      f: () => {
+        downloadText('kestrel9-save.json', storedSaveText());
+        showTitle();
+      },
+    });
   btns.push({
     t: 'How to play',
     f: () => {

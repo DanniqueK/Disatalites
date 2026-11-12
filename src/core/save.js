@@ -153,6 +153,36 @@ export function applySave(data) {
   autosave = true;
 }
 
+/** True while a game the player started or continued is running (not the title-screen background game). */
+export const autosaveOn = () => autosave;
+
+/** File name for an exported save of the running game. */
+export function saveFileName() {
+  return `kestrel9-turn${G.turn}-seed${G.seed}.json`;
+}
+
+/** The stored save as text, for exporting it from the title screen. */
+export function storedSaveText() {
+  return readRaw();
+}
+
+/**
+ * Load a save from an imported file, with the same checks as loading from storage, then store it.
+ * @param {string} text
+ * @returns {LoadResult}
+ */
+export function importSave(text) {
+  const parsed = parseSave(text);
+  if (!parsed.ok) return parsed;
+  try {
+    applySave(parsed.data);
+  } catch (e) {
+    return { ok: false, reason: 'the saved station could not be rebuilt' };
+  }
+  save();
+  return { ok: true };
+}
+
 /** @returns {LoadResult} */
 export function loadSave() {
   const raw = readRaw();
