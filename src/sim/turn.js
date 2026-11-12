@@ -6,6 +6,7 @@ import { random } from '../core/rng.js';
 import { save } from '../core/save.js';
 import { G, M, P, V } from '../core/state.js';
 import { cheb, clamp, D8, idx, inB, pick, roll } from '../core/util.js';
+import { decayTick } from './decay.js';
 import { earthTick, firstContact } from './earth-tick.js';
 import { ECLIPSE_WARNING, sunState } from './eclipse.js';
 import { playerDied } from './end.js';
@@ -29,6 +30,7 @@ export function endTurn(quiet) {
   allyTick();
   hostileTick();
   extTick();
+  decayTick();
   watchTick();
   directorTick();
   earthTick();
