@@ -84,6 +84,7 @@ Always visible: LOG and COMBAT scroll panels, STATUS bars (body, suit O2, nutrit
 
 - `gridTick` floods power from generator sections (and the first section) through links. A section whose Junction Box is below 60% is cut off, and so is everything that is only reachable through it.
 - `powerTick` adds up generation, sorts consumers by priority (`pri`), powers them from supply and then from the battery, and logs brownouts. It also computes the signature.
+- **Eclipse** (`sim/eclipse.js`): the home orbit passes through Earth's shadow once per lap. `SUN` gives the lap length and shadow share per band (LEO 90 turns, 38% dark; MEO 240, 20%; GEO 720, 6%; HEO 960, 10%). Solar Controllers make nothing in the shadow. A station with solar power gets a warning 5 turns before (`ECLIPSE_WARNING`), and a note when the sun returns. The STATUS panel shows the band, SUN or ECLIPSE, and turns until the next change.
 - `atmoTick` gives each controlled section pressure from scrubber capacity divided by the total controlled floor area. Breached sections lose 25 pressure per turn.
 - `needsTick`: below 35% pressure your suit O2 drains (halved by a Hazard Liner). At 0 O2 you lose body. Nutrition drops over time, and you eat rations automatically when low.
 

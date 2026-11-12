@@ -7,6 +7,7 @@ import { save } from '../core/save.js';
 import { G, M, P, V } from '../core/state.js';
 import { cheb, clamp, D8, idx, inB, pick, roll } from '../core/util.js';
 import { earthTick, firstContact } from './earth-tick.js';
+import { ECLIPSE_WARNING, sunState } from './eclipse.js';
 import { playerDied } from './end.js';
 import { atHatch, extTick } from './exterior-tick.js';
 import { addFx, hurtPlayer, occupied, stats } from './stats.js';
@@ -89,10 +90,13 @@ export function powerTick() {
   gridTick();
   let gen = G.allies.filter(a => a.perk === 'grid').length * 5,
     cap = 30;
+  const sun = sunState();
+  let solar = 0;
   for (const m of G.machines) {
     const d = MD[m.type];
     const ok = m.cond >= 60 && m.on && ctlOK(m) && onGrid(m);
-    if (d.gen && ok) gen += d.gen;
+    if (d.gen && ok && m.type === 'solar') solar++;
+    if (d.gen && ok && !(m.type === 'solar' && sun.inShadow)) gen += d.gen;
     if (d.bat && ok) cap += d.bat;
     m.powered = !d.use || (d.busyUse && !m.busy);
   }
@@ -125,6 +129,13 @@ export function powerTick() {
   }
   G.bat = Math.min(cap, G.bat + sup);
   G.pw = { gen, dem, cap };
+  if (solar && !sun.inShadow && sun.untilChange === ECLIPSE_WARNING)
+    log(
+      `Earth's shadow in ${ECLIPSE_WARNING} turns: solar output drops to 0 for ${sun.dark} turns. Charge the batteries.`,
+      'warn',
+    );
+  if (solar && sun.inShadow && sun.untilChange === 1)
+    log('Sunlight in 1 turn: solar output returns.', 'info');
   const out = G.ext.drones.filter(d => !d.tr && (d.sec === HULL || d.sec === G.home) && !atHatch(d)).length;
   G.hot = Math.max(0, (G.hot || 0) - 1);
   G.sig = Math.round(
