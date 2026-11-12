@@ -1,0 +1,26 @@
+{
+  "name": "disatalites",
+  "private": true,
+  "type": "module",
+  "description": "KESTREL-9: Orbital Ward, a turn-based roguelike in plain HTML, CSS and ES modules.",
+  "scripts": {
+    "start": "npx --yes serve .",
+    "lint": "eslint .",
+    "typecheck": "tsc -p jsconfig.json",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}

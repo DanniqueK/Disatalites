@@ -42,21 +42,21 @@ Main features:
 
 The map area has four tabs. Tabs other than STATION unlock as you progress.
 
-| Tab | Unlock | What it shows |
-| --- | --- | --- |
-| STATION | always | The inside of KESTREL-9 from the player's view, with field of view and memory of seen tiles. |
-| EXTERIOR | first drone activated | Two maps: the HULL (your station and the build space around it) and LOCAL SPACE / other sectors (debris, wrecks, stations). Drones are commanded here. |
-| ORBIT | first drone activated | A zoomable sensor chart around Earth with orbital rings, contacts and drone transfers. |
-| EARTH | Comms Array online (first contact) | The surface map with faction territory, habitable land, legacy satellites, your satellites and requests. |
+| Tab      | Unlock                             | What it shows                                                                                                                                          |
+| -------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| STATION  | always                             | The inside of KESTREL-9 from the player's view, with field of view and memory of seen tiles.                                                           |
+| EXTERIOR | first drone activated              | Two maps: the HULL (your station and the build space around it) and LOCAL SPACE / other sectors (debris, wrecks, stations). Drones are commanded here. |
+| ORBIT    | first drone activated              | A zoomable sensor chart around Earth with orbital rings, contacts and drone transfers.                                                                 |
+| EARTH    | Comms Array online (first contact) | The surface map with faction territory, habitable land, legacy satellites, your satellites and requests.                                               |
 
 The side panels change with the tab:
 
-| Tab | Top panel | Bottom panel |
-| --- | --- | --- |
-| STATION | GEAR (slots and carried items) | SECTIONS (crew, AI allies, machines per section) |
-| EXTERIOR | DRONES (cards, recall, deploy) | ORBIT (sector summary, stations, loose sections) |
-| ORBIT | SENSORS (ranges, lamps, sweep) | CONTACTS (known and unknown sectors) |
-| EARTH | FACTIONS (rep, territory, legacy sats) | REQUESTS |
+| Tab      | Top panel                              | Bottom panel                                     |
+| -------- | -------------------------------------- | ------------------------------------------------ |
+| STATION  | GEAR (slots and carried items)         | SECTIONS (crew, AI allies, machines per section) |
+| EXTERIOR | DRONES (cards, recall, deploy)         | ORBIT (sector summary, stations, loose sections) |
+| ORBIT    | SENSORS (ranges, lamps, sweep)         | CONTACTS (known and unknown sectors)             |
+| EARTH    | FACTIONS (rep, territory, legacy sats) | REQUESTS                                         |
 
 Always visible: LOG and COMBAT scroll panels, STATUS bars (body, suit O2, nutrition, battery, signature) with resources, and the current OBJECTIVE.
 
@@ -157,28 +157,28 @@ Incidents: hunters, legacy radar sweep, rogue drones, micrometeoroids, solar fla
 
 ## Controls
 
-| Context | Input | Action |
-| --- | --- | --- |
-| Station | WASD (two keys for diagonals), arrows, numpad, vi keys (`hjkl yubn`) | Move or bump-attack |
-| Station | Click or tap a tile | Walk there (auto-path), or use an adjacent machine or breach |
-| Station | `U` | Use an adjacent machine or breach |
-| Station | `.` or Space, Numpad 5 | Wait 1 turn |
-| Station | `R` | Wait 10 turns |
-| Station | `F` / Tab | Fire / cycle target |
-| Station | `G` or `,` | Pick up |
-| Station | `E` | Eat |
-| Station | `1`-`8` | Open carried item |
-| Exterior | Click or tap | Select a drone, then command it on the target |
-| Exterior | Drag, WASD, arrows | Pan |
-| Exterior | Wheel, `+`, `-` | Zoom |
-| Exterior | Tab | Next drone |
-| Exterior, Orbit, Earth | `.` or Space / `w` | Wait 1 / wait 10 |
-| Orbit, Earth | Wheel, drag | Zoom and pan |
-| Any | `z` / `x` / `o` / `c` | Station / Exterior / Orbit / Earth tab |
-| Any | `t` | Cycle labels (see-through, faint, off) |
-| Any | `L` (Shift+L) | Full log |
-| Any | `?` or `/` | Help |
-| Modal | `1`-`9` / Esc | Pick a button / close |
+| Context                | Input                                                                | Action                                                       |
+| ---------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Station                | WASD (two keys for diagonals), arrows, numpad, vi keys (`hjkl yubn`) | Move or bump-attack                                          |
+| Station                | Click or tap a tile                                                  | Walk there (auto-path), or use an adjacent machine or breach |
+| Station                | `U`                                                                  | Use an adjacent machine or breach                            |
+| Station                | `.` or Space, Numpad 5                                               | Wait 1 turn                                                  |
+| Station                | `R`                                                                  | Wait 10 turns                                                |
+| Station                | `F` / Tab                                                            | Fire / cycle target                                          |
+| Station                | `G` or `,`                                                           | Pick up                                                      |
+| Station                | `E`                                                                  | Eat                                                          |
+| Station                | `1`-`8`                                                              | Open carried item                                            |
+| Exterior               | Click or tap                                                         | Select a drone, then command it on the target                |
+| Exterior               | Drag, WASD, arrows                                                   | Pan                                                          |
+| Exterior               | Wheel, `+`, `-`                                                      | Zoom                                                         |
+| Exterior               | Tab                                                                  | Next drone                                                   |
+| Exterior, Orbit, Earth | `.` or Space / `w`                                                   | Wait 1 / wait 10                                             |
+| Orbit, Earth           | Wheel, drag                                                          | Zoom and pan                                                 |
+| Any                    | `z` / `x` / `o` / `c`                                                | Station / Exterior / Orbit / Earth tab                       |
+| Any                    | `t`                                                                  | Cycle labels (see-through, faint, off)                       |
+| Any                    | `L` (Shift+L)                                                        | Full log                                                     |
+| Any                    | `?` or `/`                                                           | Help                                                         |
+| Modal                  | `1`-`9` / Esc                                                        | Pick a button / close                                        |
 
 Dangerous modal actions (for example strip, uninstall, detach, scrap, seal, disconnect) sit behind a "service hatch" cover and need an 800 ms press and hold to confirm.
 
@@ -188,33 +188,33 @@ On touch or narrow screens there is an on-screen d-pad and action buttons, a HUD
 
 The game is split into ES modules under `src/`, one per area, and every module imports what it uses explicitly. Shared mutable state lives in `src/core/state.js` (see [State](#state)).
 
-| Module | Responsibility |
-| --- | --- |
-| `core/constants.js`, `core/data.js` | World size (`WW` x `WH` = 144 x 100) and tile types `T` in `constants.js`; all data tables (see below) plus the item helpers `itN` and `mk` in `data.js`. |
-| `core/util.js` | Small helpers: `$`, random (`rnd`, `rr`, `pick`, `shuffle`, `pickW`), `clamp`, `idx`, `cheb` (Chebyshev distance), `esc` (HTML escape). |
-| `world/shapes.js` | `genShape` makes a connected floor blob of a given kind, walls it, and picks 2 to 4 port candidates. Rotation helpers: `rotDims`, `rotP`, `rotD`, `toWorld`, `toLocal`. |
-| `world/packs.js` | A "pack" is a portable section: shape plus machines, crates, items, actors and breaches in local coordinates. `makePack` places fixtures (keeping the floor connected via `shapeFloodOk`), the grid node, terminal, junction box, mounts, hardpoints and windows. `fillDerelict` adds loot and enemies. |
-| `world/build.js` | `rebuildMap` rasterises all sections into `M.map` (tile types), `M.own` (owner section) and `M.room` (floor owner), places breaches and machines, and finds rack hatches. `fitsAt` and `dockPack` attach a pack to a free port. `packModule` turns a docked section back into a pack. Also hull editing (`cutSpot`, `doCut`, `doSeal`, `setBrace`), structure (`jointLoads`, `stressTick`), tube planning (`planTube`, `buildTube`) and `canDetach`. |
-| `world/machines.js` | `online`, `addStock`, `caps` (storage caps from lockers), item dropping, `droneCap`. |
-| `world/new-game.js` | `newGame(start)` builds `G` and `P`, the starting station, loot, breaches, sectors, Earth and the intro log. |
-| `space/exterior-objects.js` | Spawners for debris, derelicts, wrecks, pods and rogues in local space, and `spawnDrone`. |
-| `space/sectors.js` | Sector generation, `genStation`, the intrusion console (`hackInit`, `hackTurn`, `hackConsole`), `subdueStation`, sight (`updateSight`), crew AI (`crewTick`, `crewPath`, `engTarget`), allies, home relocation, sensors (`sensorTick`, `activeSweep`, `startFocus`) and drone transfers. |
-| `space/earth.js` | Land generation, faction territory, `territoryTick`, `legacyTick`. |
-| `world/fov.js` | Ray-cast field of view (radius 12), line of sight, BFS helpers, pressure lookup. |
-| `ui/log-modal.js` | `log`, `cmb`, `showModal` (buttons, number hotkeys, danger hatch, hold-to-confirm), `queueModal`, `machinePlate`, `showLog`. |
-| `sim/stats.js` | `stats` (derived from gear), `hurtPlayer`, actor damage and death. |
-| `sim/turn.js` | `endTurn`, `waitN`, `refresh`, and the per-turn ticks (see [Turn pipeline](#turn-pipeline)). |
-| `sim/storyteller.js` | `INC` incident list and `directorTick`. |
-| `sim/exterior-tick.js` | Drone pathing (`extNext`, `moveTo`), `droneAct`, rogue and swarm AI, turrets and point defense, `extTick`. |
-| `sim/earth-tick.js` | First contact, request generation and completion, reputation, sabotage, IFF spoof resolution, satellite release. |
-| `sim/end.js` | `playerDied`, `endGame`. |
-| `actions/player.js` | Moving, melee, firing, pickup, eating, item and part menus, machine, node, mount, patch and fabricator menus, claiming, silent running, satellite deployment. |
-| `actions/exterior.js` | `extTap` dispatches a tap in the exterior to the right drone command or menu. Tow, connector, construct, joint, tube, interface and station menus. |
-| `actions/earth.js` | Survey, cargo launch, spoof and mass driver menus. |
-| `ui/render.js` | Canvas drawing for all four views, fixture art, labels and effects. |
-| `ui/panels.js` | Side panels and pad per tab (`updateUI`, `uiStation`, `uiExt`, `uiOrbit`, `uiEarth`, `renderPad`), `padAction`. |
-| `ui/help-title.js`, `core/save.js` | Help text, title screen and new game start in `help-title.js`; save and load in `save.js`. |
-| `main.js` | Click-to-travel, keyboard, pointer (tap, drag, wheel zoom) and resize handling, then boot. |
+| Module                              | Responsibility                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `core/constants.js`, `core/data.js` | World size (`WW` x `WH` = 144 x 100) and tile types `T` in `constants.js`; all data tables (see below) plus the item helpers `itN` and `mk` in `data.js`.                                                                                                                                                                                                                                                                                            |
+| `core/util.js`                      | Small helpers: `$`, random (`rnd`, `rr`, `pick`, `shuffle`, `pickW`), `clamp`, `idx`, `cheb` (Chebyshev distance), `esc` (HTML escape).                                                                                                                                                                                                                                                                                                              |
+| `world/shapes.js`                   | `genShape` makes a connected floor blob of a given kind, walls it, and picks 2 to 4 port candidates. Rotation helpers: `rotDims`, `rotP`, `rotD`, `toWorld`, `toLocal`.                                                                                                                                                                                                                                                                              |
+| `world/packs.js`                    | A "pack" is a portable section: shape plus machines, crates, items, actors and breaches in local coordinates. `makePack` places fixtures (keeping the floor connected via `shapeFloodOk`), the grid node, terminal, junction box, mounts, hardpoints and windows. `fillDerelict` adds loot and enemies.                                                                                                                                              |
+| `world/build.js`                    | `rebuildMap` rasterises all sections into `M.map` (tile types), `M.own` (owner section) and `M.room` (floor owner), places breaches and machines, and finds rack hatches. `fitsAt` and `dockPack` attach a pack to a free port. `packModule` turns a docked section back into a pack. Also hull editing (`cutSpot`, `doCut`, `doSeal`, `setBrace`), structure (`jointLoads`, `stressTick`), tube planning (`planTube`, `buildTube`) and `canDetach`. |
+| `world/machines.js`                 | `online`, `addStock`, `caps` (storage caps from lockers), item dropping, `droneCap`.                                                                                                                                                                                                                                                                                                                                                                 |
+| `world/new-game.js`                 | `newGame(start)` builds `G` and `P`, the starting station, loot, breaches, sectors, Earth and the intro log.                                                                                                                                                                                                                                                                                                                                         |
+| `space/exterior-objects.js`         | Spawners for debris, derelicts, wrecks, pods and rogues in local space, and `spawnDrone`.                                                                                                                                                                                                                                                                                                                                                            |
+| `space/sectors.js`                  | Sector generation, `genStation`, the intrusion console (`hackInit`, `hackTurn`, `hackConsole`), `subdueStation`, sight (`updateSight`), crew AI (`crewTick`, `crewPath`, `engTarget`), allies, home relocation, sensors (`sensorTick`, `activeSweep`, `startFocus`) and drone transfers.                                                                                                                                                             |
+| `space/earth.js`                    | Land generation, faction territory, `territoryTick`, `legacyTick`.                                                                                                                                                                                                                                                                                                                                                                                   |
+| `world/fov.js`                      | Ray-cast field of view (radius 12), line of sight, BFS helpers, pressure lookup.                                                                                                                                                                                                                                                                                                                                                                     |
+| `ui/log-modal.js`                   | `log`, `cmb`, `showModal` (buttons, number hotkeys, danger hatch, hold-to-confirm), `queueModal`, `machinePlate`, `showLog`.                                                                                                                                                                                                                                                                                                                         |
+| `sim/stats.js`                      | `stats` (derived from gear), `hurtPlayer`, actor damage and death.                                                                                                                                                                                                                                                                                                                                                                                   |
+| `sim/turn.js`                       | `endTurn`, `waitN`, `refresh`, and the per-turn ticks (see [Turn pipeline](#turn-pipeline)).                                                                                                                                                                                                                                                                                                                                                         |
+| `sim/storyteller.js`                | `INC` incident list and `directorTick`.                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `sim/exterior-tick.js`              | Drone pathing (`extNext`, `moveTo`), `droneAct`, rogue and swarm AI, turrets and point defense, `extTick`.                                                                                                                                                                                                                                                                                                                                           |
+| `sim/earth-tick.js`                 | First contact, request generation and completion, reputation, sabotage, IFF spoof resolution, satellite release.                                                                                                                                                                                                                                                                                                                                     |
+| `sim/end.js`                        | `playerDied`, `endGame`.                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `actions/player.js`                 | Moving, melee, firing, pickup, eating, item and part menus, machine, node, mount, patch and fabricator menus, claiming, silent running, satellite deployment.                                                                                                                                                                                                                                                                                        |
+| `actions/exterior.js`               | `extTap` dispatches a tap in the exterior to the right drone command or menu. Tow, connector, construct, joint, tube, interface and station menus.                                                                                                                                                                                                                                                                                                   |
+| `actions/earth.js`                  | Survey, cargo launch, spoof and mass driver menus.                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `ui/render.js`                      | Canvas drawing for all four views, fixture art, labels and effects.                                                                                                                                                                                                                                                                                                                                                                                  |
+| `ui/panels.js`                      | Side panels and pad per tab (`updateUI`, `uiStation`, `uiExt`, `uiOrbit`, `uiEarth`, `renderPad`), `padAction`.                                                                                                                                                                                                                                                                                                                                      |
+| `ui/help-title.js`, `core/save.js`  | Help text, title screen and new game start in `help-title.js`; save and load in `save.js`.                                                                                                                                                                                                                                                                                                                                                           |
+| `main.js`                           | Click-to-travel, keyboard, pointer (tap, drag, wheel zoom) and resize handling, then boot.                                                                                                                                                                                                                                                                                                                                                           |
 
 ### State
 
@@ -229,31 +229,31 @@ Exterior objects in `G.ext.objs` share one list and are told apart by `kind`: `d
 
 ## Data tables
 
-| Table | Contents |
-| --- | --- |
-| `BR` | Brands: name, country code, colours, floor glyph, wall pattern, preferred shapes. |
-| `MD` | Machine definitions: name, glyph, colour, power use or generation, priority, tech flag, description. |
-| `MC` | Machine material values used for kits, stripping, scrapping and build costs. |
-| `FX` | Fixture placement rules (wall-backed or free-standing, candidate sizes). |
-| `FN` | Section functions and the machines each one contains. |
-| `DPOOL` | Weights for which derelict sections spawn. |
-| `DT` | Drone types. |
-| `IT` | Items (built from `IT0` plus generated kits). |
-| `EN` | Enemies. |
-| `RC` | Fabricator recipes (scrap, circuits, turns). |
-| `RINGS` | Orbital bands with radii, altitude ranges and sector counts. |
-| `SEC_T` | Sector types with glyph, colour and description. |
-| `STN` | Foreign station kinds: functions, security range, turrets, names. |
-| `PERK`, `AIN`, `AILINES` | AI ally perks, names and lines. |
-| `ROLE`, `CREWN`, `CREWS`, `CHAT` | Crew roles, names and chatter. |
-| `FAC`, `RIVALS` | Factions and rivalries. |
-| `LEGACY` | The six legacy defense satellites. |
-| `ANCH`, `BLOBS` | Named Earth regions and continent ellipses. |
-| `LORE` | Terminal log texts. |
-| `OBJ` | Objectives with completion checks. |
-| `INC` | Storyteller incidents. |
-| `HK` | Intrusion layer types. |
-| `CONN` | Prefab connector pieces. |
+| Table                            | Contents                                                                                             |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `BR`                             | Brands: name, country code, colours, floor glyph, wall pattern, preferred shapes.                    |
+| `MD`                             | Machine definitions: name, glyph, colour, power use or generation, priority, tech flag, description. |
+| `MC`                             | Machine material values used for kits, stripping, scrapping and build costs.                         |
+| `FX`                             | Fixture placement rules (wall-backed or free-standing, candidate sizes).                             |
+| `FN`                             | Section functions and the machines each one contains.                                                |
+| `DPOOL`                          | Weights for which derelict sections spawn.                                                           |
+| `DT`                             | Drone types.                                                                                         |
+| `IT`                             | Items (built from `IT0` plus generated kits).                                                        |
+| `EN`                             | Enemies.                                                                                             |
+| `RC`                             | Fabricator recipes (scrap, circuits, turns).                                                         |
+| `RINGS`                          | Orbital bands with radii, altitude ranges and sector counts.                                         |
+| `SEC_T`                          | Sector types with glyph, colour and description.                                                     |
+| `STN`                            | Foreign station kinds: functions, security range, turrets, names.                                    |
+| `PERK`, `AIN`, `AILINES`         | AI ally perks, names and lines.                                                                      |
+| `ROLE`, `CREWN`, `CREWS`, `CHAT` | Crew roles, names and chatter.                                                                       |
+| `FAC`, `RIVALS`                  | Factions and rivalries.                                                                              |
+| `LEGACY`                         | The six legacy defense satellites.                                                                   |
+| `ANCH`, `BLOBS`                  | Named Earth regions and continent ellipses.                                                          |
+| `LORE`                           | Terminal log texts.                                                                                  |
+| `OBJ`                            | Objectives with completion checks.                                                                   |
+| `INC`                            | Storyteller incidents.                                                                               |
+| `HK`                             | Intrusion layer types.                                                                               |
+| `CONN`                           | Prefab connector pieces.                                                                             |
 
 ## Turn pipeline
 

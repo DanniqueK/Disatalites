@@ -8,7 +8,10 @@
    - Power is scarce like FTL: systems need both condition and power.
    - Early resources are scarce and mostly sit in Storage; salvage drives growth.
    ========================================================= */
-export const WW=144,WH=100,EGW=64,EGH=28;
-export const T={VOID:0,FLOOR:1,WALL:2,DOOR:3,PORT:4,BREACH:5,WINDOW:6,MACH:7};
-export const WALK=new Set([T.FLOOR,T.DOOR]);
-export const OPQ=new Set([T.WALL,T.PORT]);
+export const WW = 144,
+  WH = 100,
+  EGW = 64,
+  EGH = 28;
+export const T = { VOID: 0, FLOOR: 1, WALL: 2, DOOR: 3, PORT: 4, BREACH: 5, WINDOW: 6, MACH: 7 };
+export const WALK = new Set([T.FLOOR, T.DOOR]);
+export const OPQ = new Set([T.WALL, T.PORT]);

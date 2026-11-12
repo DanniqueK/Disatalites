@@ -1,36 +1,66 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>KESTREL-9: Orbital Ward</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="src/style.css">
-</head>
-<body>
-<div id="app">
-  <div id="top">
-    <div class="panel"><div class="ph">/ L O G /</div><div id="log" class="scroll"></div></div>
-    <div class="panel"><div class="ph">/ C O M B A T /</div><div id="cmb" class="scroll"></div></div>
-  </div>
-  <div id="mapCol">
-    <div id="tabs">
-      <button data-tab="station">STATION</button><button data-tab="ext">EXTERIOR</button><button data-tab="orbit">ORBIT</button><button data-tab="earth">EARTH</button>
-      <span id="tabInfo"></span>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>KESTREL-9: Orbital Ward</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="top">
+        <div class="panel">
+          <div class="ph">/ L O G /</div>
+          <div id="log" class="scroll"></div>
+        </div>
+        <div class="panel">
+          <div class="ph">/ C O M B A T /</div>
+          <div id="cmb" class="scroll"></div>
+        </div>
+      </div>
+      <div id="mapCol">
+        <div id="tabs">
+          <button data-tab="station">STATION</button><button data-tab="ext">EXTERIOR</button
+          ><button data-tab="orbit">ORBIT</button><button data-tab="earth">EARTH</button>
+          <span id="tabInfo"></span>
+        </div>
+        <div id="mapWrap">
+          <canvas id="map"></canvas>
+          <div id="hud"></div>
+          <div id="tail"></div>
+        </div>
+        <div id="pad"></div>
+      </div>
+      <div id="side">
+        <div class="panel">
+          <div class="ph">/ S T A T U S /</div>
+          <div id="bars"></div>
+          <div id="res"></div>
+        </div>
+        <div class="panel">
+          <div class="ph">/ O B J E C T I V E /</div>
+          <div id="objective"></div>
+        </div>
+        <div class="panel grow">
+          <div class="ph" id="ctxH">/ G E A R /</div>
+          <div id="ctx"></div>
+        </div>
+        <div class="panel grow">
+          <div class="ph" id="ctx2H">/ S Y S T E M S /</div>
+          <div id="ctx2"></div>
+        </div>
+      </div>
     </div>
-    <div id="mapWrap"><canvas id="map"></canvas><div id="hud"></div><div id="tail"></div></div>
-    <div id="pad"></div>
-  </div>
-  <div id="side">
-    <div class="panel"><div class="ph">/ S T A T U S /</div><div id="bars"></div><div id="res"></div></div>
-    <div class="panel"><div class="ph">/ O B J E C T I V E /</div><div id="objective"></div></div>
-    <div class="panel grow"><div class="ph" id="ctxH">/ G E A R /</div><div id="ctx"></div></div>
-    <div class="panel grow"><div class="ph" id="ctx2H">/ S Y S T E M S /</div><div id="ctx2"></div></div>
-  </div>
-</div>
-<div id="modal" class="hidden"><div class="mbox"><div class="mt" id="mT"></div><div class="mb" id="mB"></div><div class="mbtns" id="mBtns"></div></div></div>
+    <div id="modal" class="hidden">
+      <div class="mbox">
+        <div class="mt" id="mT"></div>
+        <div class="mb" id="mB"></div>
+        <div class="mbtns" id="mBtns"></div>
+      </div>
+    </div>
 
-<script type="module" src="src/main.js"></script>
-</body>
+    <script type="module" src="src/main.js"></script>
+  </body>
 </html>
