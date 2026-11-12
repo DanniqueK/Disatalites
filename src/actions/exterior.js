@@ -1,5 +1,5 @@
 import { T } from '../core/constants.js';
-import { BR, CONN, DT, FN, FX, isHall, MC, MD, stById } from '../core/data.js';
+import { BR, DT, FN, FX, isHall, MC, MD, stById } from '../core/data.js';
 import { log } from '../core/messages.js';
 import { G, M, V } from '../core/state.js';
 import { cheb, dirName, idx, inB, rr } from '../core/util.js';
@@ -9,11 +9,10 @@ import { derHit, hatchOf, objById } from '../space/exterior-objects.js';
 import { hackStatus, HULL, LC, locked, tagName, where } from '../space/sectors.js';
 import { showModal } from '../ui/log-modal.js';
 import { setTab } from '../ui/panels.js';
-import { render } from '../ui/render.js';
-import { canDetach, cutSpot, fitsAt, freePorts, modById, planTube } from '../world/build.js';
+import { canDetach, fitsAt, freePorts, modById, sealedDoorAt } from '../world/build.js';
 import { modBreaches } from '../world/control.js';
 import { scrapValue } from '../world/salvage.js';
-import { connShape, toLocal } from '../world/shapes.js';
+import { hallShape } from '../world/shapes.js';
 
 /** @typedef {import('../core/types.js').ModalButton} ModalButton */
 
@@ -140,7 +139,6 @@ export function extTap(x, y) {
     log(G.ext.drones.length ? 'Select a drone first.' : 'No drones yet. Activate one at a Drone Rack.');
     return refresh();
   }
-  if (home && V.tubePlan) return tubeTap(d, x, y);
   if (home) {
     const h = hatchOf(d);
     if (h && x === h[0] && y === h[1])
@@ -177,29 +175,39 @@ export function extTap(x, y) {
       log('The section does not fit there.', 'warn');
       return refresh();
     }
+    const onHall = isHall(G.mods[fp.mi].fn);
     return showModal(
-      'DOCKING PORT',
-      `${portLabel(fp)}.\n\nLay a tube: pick an end point in open space (it ends in a new port) or another free port (it joins them, and a loop shares structural load).\nCost: 2 scrap per tile (tube kits cover 6 tiles each, you have ${G.kits}) + 1 circuit. A Utility drone welds it.\n\nSeal: weld the hatch shut (3 scrap). It can be cut open again later.`,
+      'DOOR TO SPACE',
+      `${portLabel(fp)}.\n\nBuild a corridor piece here with a Utility drone: a hallway segment (7 long, a room door on each side) or a junction hub (a door on every side). Rooms only dock onto hallway doors.\n\nSeal: weld the door shut (3 scrap). It can be opened again later.`,
       [
+        ...CORRIDOR.map(c => {
+          const kit = c.piece === 'hall' && G.kits > 0;
+          const fits = fitsAt({ fn: c.piece, shape: hallShape(c.piece) }, fp).length > 0;
+          return {
+            t: `Build a ${c.n} (${kit ? '1 hallway kit' : `${c.s} scrap, ${c.c} circ`}, ${c.t} turns)${fits ? '' : ' [no room]'}`,
+            dis: !fits || d.dt !== 'util' || (!kit && (G.stock.scrap < c.s || G.stock.circ < c.c)),
+            f: () => {
+              const paid = kit ? { s: 0, c: 0, k: 1 } : { s: c.s, c: c.c, k: 0 };
+              G.stock.scrap -= paid.s;
+              G.stock.circ -= paid.c;
+              G.kits -= paid.k;
+              cmdDrone(
+                d,
+                { type: 'build', piece: c.piece, mid: fp.mid, pi: fp.pi, w: 0, need: c.t, paid },
+                `${d.name}: building a ${c.n} on the ${portLabel(fp)}.`,
+              );
+            },
+          };
+        }),
         {
-          t: 'Lay a tube from here...',
-          f: () => {
-            V.tubePlan = { mid: fp.mid, pi: fp.pi, ghost: null };
-            log(
-              'Tube planner: tap where the tube should end (open space or another free port). Tap this port again to cancel.',
-              'info',
-            );
-            refresh();
-          },
-        },
-        { t: 'Weld on a connector piece... (collar, tube, elbow, T, cross, hub)', f: () => connMenu(d, fp) },
-        {
-          t: `Construct a section here from a schematic... (${(G.schem || []).length} known)`,
-          dis: !(G.schem || []).length,
+          t: onHall
+            ? `Construct a room here from a schematic... (${(G.schem || []).length} known)`
+            : 'Construct a room here [rooms only dock onto hallway doors]',
+          dis: !onHall || !(G.schem || []).length,
           f: () => constructMenu(d, fp),
         },
         {
-          t: `Seal this port with ${d.name} (3 scrap)`,
+          t: `Seal this door with ${d.name} (3 scrap)`,
           k: 'danger',
           dis: d.dt !== 'util' || G.stock.scrap < 3,
           f: () => {
@@ -280,7 +288,7 @@ export function extTap(x, y) {
               ),
           },
         ])
-          .concat(cutOpt(d, m, x, y))
+          .concat(unsealOpt(d, x, y))
           .concat(ifaceOpts(d, m, mi))
           .concat([
             {
@@ -306,37 +314,32 @@ export function extTap(x, y) {
       `${d.name}: moving to position${d.sec !== V.sec ? ' in ' + where(V.sec) : ''}.`,
     );
 }
-const connCost = k => {
-  const n = CONN[k].f.length;
-  return { s: n * 2 + 2, c: CONN[k].p.length > 2 ? 2 : 1, t: 3 + Math.ceil(n / 2) };
-};
-function connMenu(d, fp) {
-  const opts = Object.keys(CONN).map(k => ({ k, fit: fitsAt({ fn: 'tube', shape: connShape(k) }, fp) }));
-  showModal(
-    'CONNECTOR PIECES',
-    `Prefab corridor parts, welded on by a Utility drone. Pieces with more ports let you branch out or close loops (loops share structural load).\nPort: ${portLabel(fp)}.`,
-    opts
-      .map(
-        /** @returns {ModalButton} */ ({ k, fit }) => {
-          const c = connCost(k),
-            C = CONN[k];
-          return {
-            t: `${C.n} · ${C.p.length} ports · ${c.s}s ${c.c}c · ${c.t}t${fit.length ? '' : ' [no room]'}`,
-            dis: !fit.length || d.dt !== 'util' || G.stock.scrap < c.s || G.stock.circ < c.c,
-            f: () => {
-              G.stock.scrap -= c.s;
-              G.stock.circ -= c.c;
-              cmdDrone(
-                d,
-                { type: 'build', conn: k, mid: fp.mid, pi: fp.pi, w: 0, need: c.t, paid: c },
-                `${d.name}: welding a ${C.n.toLowerCase()} onto the ${portLabel(fp)}.`,
-              );
-            },
-          };
-        },
-      )
-      .concat([{ t: 'Cancel' }]),
-  );
+/**
+ * Corridor pieces a Utility drone can build at a free door. A hallway kit pays for a hallway segment.
+ * @type {{ piece: 'hall' | 'hub', n: string, s: number, c: number, t: number }[]}
+ */
+const CORRIDOR = [
+  { piece: 'hall', n: 'hallway segment', s: 10, c: 1, t: 6 },
+  { piece: 'hub', n: 'junction hub', s: 8, c: 1, t: 5 },
+];
+/** @returns {ModalButton[]} */
+function unsealOpt(d, x, y) {
+  const sd = sealedDoorAt(x, y);
+  if (!sd) return [];
+  return [
+    {
+      t: `Open this sealed door again with ${d.name} (2 scrap, 4 turns)`,
+      dis: d.dt !== 'util' || G.stock.scrap < 2,
+      f: () => {
+        G.stock.scrap -= 2;
+        cmdDrone(
+          d,
+          { type: 'unseal', mid: sd.m.id, pi: sd.pi, w: 0 },
+          `${d.name}: cutting the sealed door on the ${sd.m.name} open.`,
+        );
+      },
+    },
+  ];
 }
 const buildCost = h => {
   const fx = FN[h.fn].m.filter(t => FX[t] && MC[t]);
@@ -348,19 +351,21 @@ const buildCost = h => {
 };
 function constructMenu(d, fp) {
   const opts = (G.schem || [])
-    .map(h => ({ h, fit: fitsAt({ shape: h.shape }, fp) }))
+    .map(h => ({ h, fit: fitsAt({ fn: h.fn, shape: h.shape }, fp) }))
     .filter(o => o.fit.length);
   if (!opts.length) {
     showModal(
       'NO FIT',
-      'None of your hull schematics fit on this port. Try another port, or lay a tube out to open space first.',
+      isHall(G.mods[fp.mi].fn)
+        ? 'None of your room schematics fit at this door. Try another hallway door, or extend the hallway first.'
+        : 'Rooms only dock onto hallway doors. Build a hallway segment here first.',
       [{ t: 'OK' }],
     );
     return;
   }
   showModal(
     'CONSTRUCT SECTION',
-    `Builds the hull with its built-in machine frame (at 40%, needs repairs), a grid node, a junction box and bare mounts for small gear.\nPort: ${portLabel(fp)}.`,
+    `Builds the room with its built-in machine frame (at 40%, needs repairs), a grid node and a junction box. Install small gear afterwards.\nPort: ${portLabel(fp)}.`,
     opts
       .slice(0, 8)
       .map(({ h, fit }) => {
@@ -380,73 +385,6 @@ function constructMenu(d, fp) {
         };
       })
       .concat([{ t: 'Cancel' }]),
-  );
-}
-/** @returns {ModalButton[]} */
-function cutOpt(d, m, x, y) {
-  if (M.map[idx(x, y)] !== T.WALL) return [];
-  const [lx, ly] = toLocal(m, x, y);
-  const c = cutSpot(m, lx, ly);
-  if (!c) return [{ t: 'Cut a port here [not a straight outer wall with room outside]', dis: true }];
-  return [
-    {
-      t: `Cut a new port here with ${d.name} (4 scrap, 6 turns)`,
-      dis: d.dt !== 'util' || G.stock.scrap < 4,
-      f: () => {
-        G.stock.scrap -= 4;
-        cmdDrone(
-          d,
-          { type: 'cut', mid: m.id, lx, ly, w: 0 },
-          `${d.name}: cutting a new port into the ${m.name}.`,
-        );
-      },
-    },
-  ];
-}
-function tubeTap(d, x, y) {
-  const pl = V.tubePlan;
-  const fp = freePorts().find(p => p.mid === pl.mid && p.pi === pl.pi);
-  if (!fp || (x === fp.x && y === fp.y)) {
-    V.tubePlan = null;
-    log('Tube planner closed.');
-    return refresh();
-  }
-  const plan = planTube(fp, x, y);
-  if (plan.err) {
-    pl.ghost = null;
-    log(plan.err, 'warn');
-    return refresh();
-  }
-  pl.ghost = plan;
-  const ku = Math.min(G.kits, Math.ceil(plan.len / 6));
-  const sc = Math.max(0, plan.len - ku * 6) * 2;
-  const need = 3 + Math.ceil(plan.len / 2);
-  render();
-  showModal(
-    'LAY TUBE',
-    `${plan.len} tiles${plan.mid2 != null ? '. It joins two ports into a loop, which shares structural load' : '. The open end becomes a new docking port'}.\nCost: ${sc} scrap${ku ? ' + ' + ku + ' tube kit' + (ku > 1 ? 's' : '') : ''} + 1 circuit. ${d.name} needs about ${need} turns once it is in place.`,
-    [
-      {
-        t: `Build it with ${d.name}`,
-        dis: d.dt !== 'util' || G.stock.scrap < sc || G.stock.circ < 1,
-        f: () => {
-          G.stock.scrap -= sc;
-          G.kits -= ku;
-          G.stock.circ--;
-          plan.paid = { s: sc, k: ku, c: 1 };
-          V.tubePlan = null;
-          cmdDrone(d, { type: 'tube2', plan, w: 0, need }, `${d.name}: laying a ${plan.len}-tile tube.`);
-        },
-      },
-      { t: 'Pick a different end point', f: () => {} },
-      {
-        t: 'Cancel planner',
-        f: () => {
-          V.tubePlan = null;
-          refresh();
-        },
-      },
-    ],
   );
 }
 /** @returns {ModalButton[]} */
@@ -549,24 +487,20 @@ function taskText2(d, t) {
       return 'retrieving';
     case 'patch':
       return 'patching hull';
-    case 'cut':
-      return `cutting a port ${t.w}/6`;
     case 'seal':
-      return `sealing a port ${t.w}/4`;
-    case 'tube2':
-      return `laying tube ${t.w}/${t.need}`;
+      return `sealing a door ${t.w}/4`;
+    case 'unseal':
+      return `opening a sealed door ${t.w}/4`;
     case 'scrap':
       return `scrapping ${t.w}/${t.need}`;
     case 'scrapmod':
       return `scrapping a section ${t.w}/${t.need || '?'}`;
     case 'build':
-      return `building hull ${t.w}/${t.need}`;
+      return `building ${t.piece === 'hub' ? 'a hub' : t.piece ? 'a hallway' : 'a room'} ${t.w}/${t.need}`;
     case 'park':
       return t.att ? 'hauling a section home' : 'moving to section';
     case 'iface':
       return `${t.mode === 'claim' ? 'remote claim' : 'rebooting node'} ${t.w}/${t.need}`;
-    case 'tube':
-      return 'building tube';
     case 'detach':
       return 'detaching section';
     case 'tow': {

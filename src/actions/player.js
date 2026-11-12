@@ -74,7 +74,7 @@ export function playerMove(dx, dy) {
   if (t === T.PORT) {
     const own = G.mods[M.own[idx(nx, ny)]];
     log(
-      `Sealed ${own ? BR[own.brand].cc + ' ' : ''}docking hatch. Tow a section here with a drone, or build a tube (EXTERIOR).`,
+      `Sealed ${own ? BR[own.brand].cc + ' ' : ''}docking hatch. Build a hallway segment here with a drone, or tow a room to it (EXTERIOR).`,
       'info',
     );
     return refresh();

@@ -50,9 +50,10 @@ import {
 import { $ } from './dom.js';
 import { showModal } from './log-modal.js';
 import { setTab } from './panels.js';
-import { cutSpot, freePorts, hullNear, modById, modCells, modIndex } from '../world/build.js';
+import { freePorts, hullNear, modById, modCells, modIndex } from '../world/build.js';
 import { modBreaches } from '../world/control.js';
 import { commsOnline, ctlOK, hasOnline, machineStatus, online } from '../world/machines.js';
+import { toWorld } from '../world/shapes.js';
 
 export const cv = $('#map'),
   ctx = cv.getContext('2d');
@@ -1227,26 +1228,6 @@ function renderExt() {
       ctx.fillStyle = 'rgba(47,220,79,.25)';
       ctx.fillRect(sx(fp.x + fp.dx), sy(fp.y + fp.dy), ts, ts);
     }
-    if (V.tubePlan) {
-      const fp = freePorts().find(p => p.mid === V.tubePlan.mid && p.pi === V.tubePlan.pi);
-      if (fp) {
-        ctx.strokeStyle = '#7fffd0';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(sx(fp.x) - 1, sy(fp.y) - 1, ts + 2, ts + 2);
-      }
-      const gp = V.tubePlan.ghost;
-      if (gp) {
-        ctx.globalAlpha = 0.5;
-        for (let y = 0; y < gp.shape.h; y++)
-          for (let x = 0; x < gp.shape.w; x++) {
-            const ch = gp.shape.g[y][x];
-            if (ch === ' ') continue;
-            ctx.fillStyle = ch === '#' ? '#2a6a5a' : ch === 'P' ? '#7fffd0' : '#0f3a30';
-            ctx.fillRect(sx(gp.ox + x), sy(gp.oy + y), ts, ts);
-          }
-        ctx.globalAlpha = 1;
-      }
-    }
     for (const k of G.machines)
       if (k.type === 'rack' && k.hatch && online(k))
         glyph('H', sx(k.hatch[0]), sy(k.hatch[1]), '#ffff50', ts);
@@ -1571,11 +1552,6 @@ function taskTarget(d) {
     case 'attack':
       o = objById(t.oid);
       return o && o.sec === d.sec ? [o.x, o.y] : null;
-    case 'cut': {
-      const m = modById(t.mid);
-      const c = m && cutSpot(m, t.lx, t.ly);
-      return c ? [c.ox, c.oy] : null;
-    }
     case 'scrap':
     case 'park': {
       const o = objById(t.oid);
@@ -1585,8 +1561,6 @@ function taskTarget(d) {
       const fp = freePorts().find(p => p.mid === t.mid && p.pi === t.pi);
       return fp ? [fp.x + fp.dx, fp.y + fp.dy] : null;
     }
-    case 'tube2':
-      return t.plan.cells[0];
     case 'seal': {
       const fp = freePorts().find(p => p.mid === t.mid && p.pi === t.pi);
       return fp ? [fp.x + fp.dx, fp.y + fp.dy] : null;
@@ -1608,9 +1582,10 @@ function taskTarget(d) {
       const fp = freePorts().find(p => p.mid === t.mid && p.pi === t.pi);
       return fp ? [fp.x, fp.y] : null;
     }
-    case 'tube': {
-      const fp = freePorts().find(p => p.mid === t.mid && p.pi === t.pi);
-      return fp ? [fp.x, fp.y] : null;
+    case 'unseal': {
+      const m = modById(t.mid);
+      const p = m && m.shape.ports[t.pi];
+      return p ? toWorld(m, p.x, p.y) : null;
     }
     case 'detach': {
       const m = modById(t.mid);

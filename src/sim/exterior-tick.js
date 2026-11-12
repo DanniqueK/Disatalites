@@ -1,5 +1,5 @@
 import { T, WH, WW } from '../core/constants.js';
-import { CONN, DT, FX, hasAI, hasCrew, IT, mk, stById, TAGK } from '../core/data.js';
+import { BRANDS, DT, FX, hasAI, hasCrew, IT, mk, stById, TAGK } from '../core/data.js';
 import { cmb, log } from '../core/messages.js';
 import { random } from '../core/rng.js';
 import { G, M, P, V } from '../core/state.js';
@@ -24,12 +24,10 @@ import {
 } from '../space/sectors.js';
 import {
   addBreachMod,
-  buildTube,
   canDetach,
-  cutSpot,
   dockPack,
-  doCut,
   doSeal,
+  doUnseal,
   fitsAt,
   freePorts,
   hullNear,
@@ -45,7 +43,7 @@ import { claimDone, lockdown, modBreaches } from '../world/control.js';
 import { addStock, dropNear, online } from '../world/machines.js';
 import { makePack } from '../world/packs.js';
 import { learnFrom, scrapValue } from '../world/salvage.js';
-import { connShape } from '../world/shapes.js';
+import { rotD, toWorld } from '../world/shapes.js';
 
 function extNext(sx, sy, goal, sec) {
   const home = sec == null || sec === HULL;
@@ -184,19 +182,7 @@ function droneAct(d) {
     return;
   }
   const needHome =
-    [
-      'idle',
-      'return',
-      'patch',
-      'tube',
-      'detach',
-      'iface',
-      'cut',
-      'seal',
-      'tube2',
-      'scrapmod',
-      'build',
-    ].includes(t.type) ||
+    ['idle', 'return', 'patch', 'detach', 'iface', 'seal', 'unseal', 'scrapmod', 'build'].includes(t.type) ||
     (t.type === 'park' && t.att) ||
     (t.type === 'tow' && t.att && t.mid);
   if (needHome && d.sec !== HULL) {
@@ -469,24 +455,24 @@ function droneAct(d) {
       break;
     }
     case 'build': {
-      const h = t.conn
-        ? {
-            fn: 'tube',
-            brand:
-              t.brand ||
-              (t.brand = pick(['scav', 'aster', 'volkov', 'kibo', 'columbus', 'bharat', 'tianhe'])),
-            shape: connShape(t.conn),
-            name: CONN[t.conn].n,
-          }
-        : (G.schem || []).find(h => h.key === t.key);
       const fp = freePorts().find(p => p.mid === t.mid && p.pi === t.pi);
-      const pk =
-        h && makePack(h.fn, h.brand, { shape: h.shape, fill: 'shell', cond: t => (FX[t] ? 40 : 100) });
-      if (pk && t.conn) pk.name = CONN[t.conn].n;
+      let pk = null,
+        label;
+      if (t.piece) {
+        pk = makePack(t.piece, t.brand || (t.brand = pick(BRANDS)), { fill: 'shell', cond: () => 100 });
+        label = t.piece === 'hub' ? 'junction hub' : 'hallway segment';
+      } else {
+        const h = (G.schem || []).find(h => h.key === t.key);
+        if (h) {
+          pk = makePack(h.fn, h.brand, { shape: h.shape, fill: 'shell', cond: t => (FX[t] ? 40 : 100) });
+          label = h.name;
+        }
+      }
       const fits = fp && pk ? fitsAt(pk, fp) : [];
       if (!fits.length) {
         addStock('scrap', t.paid.s);
         addStock('circ', t.paid.c);
+        G.kits += t.paid.k || 0;
         log(`${d.name}: no room for the new hull there any more. Materials refunded.`, 'warn');
         d.task = { type: 'idle' };
         break;
@@ -501,34 +487,15 @@ function droneAct(d) {
           dockPack(pk, fp, fits[0], true);
           G.stat.docked++;
           G.stat.built = (G.stat.built || 0) + 1;
-          if (t.conn) G.stat.tubes = (G.stat.tubes || 0) + 1;
           log(
-            t.conn
-              ? `${d.name} welded a ${h.name.toLowerCase()} in place.`
-              : `${d.name} finished a new ${h.name} hull. Repair its main machine and fit small gear on its mounts.`,
+            t.piece
+              ? `${d.name} finished a new ${label}.`
+              : `${d.name} finished a new ${label} hull. Repair its main machine and install the gear it needs.`,
             'good',
           );
           d.task = { type: 'idle' };
         }
       } else moveTo(d, (a, b) => cheb(a, b, ox, oy) <= 2, spd(d));
-      break;
-    }
-    case 'cut': {
-      const m = modById(t.mid);
-      const c = m && cutSpot(m, t.lx, t.ly);
-      if (!c) {
-        addStock('scrap', 4);
-        log(`${d.name}: that wall cannot take a port any more. Scrap refunded.`, 'warn');
-        d.task = { type: 'idle' };
-        break;
-      }
-      if (cheb(d.x, d.y, c.ox, c.oy) <= 1) {
-        if (++t.w >= 6) {
-          doCut(m, t.lx, t.ly);
-          log(`${d.name} cut a new port into the ${m.name}.`, 'good');
-          d.task = { type: 'idle' };
-        }
-      } else moveTo(d, adjTo(c.ox, c.oy), spd(d));
       break;
     }
     case 'seal': {
@@ -543,47 +510,30 @@ function droneAct(d) {
       if (cheb(d.x, d.y, ox, oy) <= 1) {
         if (++t.w >= 4) {
           doSeal(m, t.pi);
-          log(`${d.name} welded the port shut on the ${m.name}.`, 'good');
+          log(`${d.name} welded the door shut on the ${m.name}.`, 'good');
           d.task = { type: 'idle' };
         }
       } else moveTo(d, adjTo(ox, oy), spd(d));
       break;
     }
-    case 'tube2': {
-      const pl = t.plan;
-      const s0 = pl.cells[0];
-      const fp = freePorts().find(p => p.mid === pl.mid && p.pi === pl.pi);
-      const stillOk =
-        fp &&
-        pl.shape.g.every((r, y) =>
-          [...r].every(
-            (ch, x) =>
-              ch === ' ' ||
-              M.map[idx(pl.ox + x, pl.oy + y)] === T.VOID ||
-              (ch === '#' && M.map[idx(pl.ox + x, pl.oy + y)] === T.WALL) ||
-              (ch !== '#' && false),
-          ),
-        );
-      if (!stillOk) {
-        addStock('scrap', pl.paid.s);
-        G.kits += pl.paid.k;
-        addStock('circ', 1);
-        log(`${d.name}: the tube route is blocked now. Materials refunded.`, 'warn');
+    case 'unseal': {
+      const m = modById(t.mid);
+      const p = m && m.shape.ports[t.pi];
+      if (!p || !p.sealed) {
         d.task = { type: 'idle' };
         break;
       }
-      if (cheb(d.x, d.y, s0[0], s0[1]) <= 2) {
-        if (++t.w >= t.need) {
-          const m = buildTube(pl);
-          if (m) log(`${d.name} finished a ${pl.len}-tile connector tube.`, 'good');
-          else {
-            addStock('scrap', pl.paid.s);
-            G.kits += pl.paid.k;
-            addStock('circ', 1);
-          }
+      const [wx, wy] = toWorld(m, p.x, p.y);
+      const [dx, dy] = rotD(p.dx, p.dy, m.rot);
+      const ox = wx + dx,
+        oy = wy + dy;
+      if (cheb(d.x, d.y, ox, oy) <= 1) {
+        if (++t.w >= 4) {
+          doUnseal(m, t.pi);
+          log(`${d.name} cut the sealed door on the ${m.name} open again.`, 'good');
           d.task = { type: 'idle' };
         }
-      } else moveTo(d, (a, b) => cheb(a, b, s0[0], s0[1]) <= 2, spd(d));
+      } else moveTo(d, adjTo(ox, oy), spd(d));
       break;
     }
     case 'patch': {
@@ -600,43 +550,6 @@ function droneAct(d) {
           d.task = { type: 'idle' };
         }
       } else moveTo(d, adjTo(b.x, b.y), spd(d));
-      break;
-    }
-    case 'tube': {
-      const m = modById(t.mid);
-      const fp = m ? freePorts().find(p => p.mid === t.mid && p.pi === t.pi) : null;
-      if (!fp) {
-        d.task = { type: 'idle' };
-        G.kits++;
-        log('Tube build cancelled: that port is no longer free. Kit returned.', 'warn');
-        break;
-      }
-      const ox = fp.x + fp.dx,
-        oy = fp.y + fp.dy;
-      if (cheb(d.x, d.y, ox, oy) <= 1) {
-        if (++t.w >= 5) {
-          const pk = makePack('tube', pick(['scav', 'aster', 'volkov', 'kibo']), {
-            pressure: 0,
-            cond: () => 100,
-          });
-          pk.breaches = [];
-          const fits = fitsAt(pk, fp);
-          if (fits.length) {
-            const nx = freeNear(d.x, d.y, 8);
-            dockPack(pk, fp, pick(fits), true);
-            G.stat.docked++;
-            if (nx) {
-              d.x = nx[0];
-              d.y = nx[1];
-            }
-            log(`${d.name} welded a connector tube onto the ${m.name}.`, 'good');
-          } else {
-            G.kits++;
-            log('Not enough room to build a tube there. Kit returned.', 'warn');
-          }
-          d.task = { type: 'idle' };
-        }
-      } else moveTo(d, adjTo(ox, oy), spd(d));
       break;
     }
     case 'tow': {

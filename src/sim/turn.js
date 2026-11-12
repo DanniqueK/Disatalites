@@ -374,7 +374,7 @@ export function fabDone(k, m) {
   } else if (k === 'tube') {
     G.kits++;
     log(
-      'Fabricator: connector tube kit ready. A Utility drone can weld it onto a free port (EXTERIOR).',
+      'Fabricator: hallway kit ready. A Utility drone can build a hallway segment at a free door (EXTERIOR).',
       'good',
     );
   } else if (k.startsWith('sat_')) {
