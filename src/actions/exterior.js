@@ -6,12 +6,12 @@ import { cheb, dirName, idx, inB, rr } from '../core/util.js';
 import { atHatch, cargoLoad } from '../sim/exterior-tick.js';
 import { refresh } from '../sim/turn.js';
 import { derHit, hatchOf, objById } from '../space/exterior-objects.js';
-import { hackStatus, HULL, LC, locked, tagName, where } from '../space/sectors.js';
+import { hackStatus, HULL, LC, locked, tagName, travelTime, where } from '../space/sectors.js';
 import { showModal } from '../ui/log-modal.js';
 import { setTab } from '../ui/panels.js';
 import { canDetach, fitsAt, freePorts, modById, sealedDoorAt } from '../world/build.js';
 import { modBreaches } from '../world/control.js';
-import { scrapValue } from '../world/salvage.js';
+import { estimateText, salvageEstimate, scrapValue } from '../world/salvage.js';
 import { hallShape } from '../world/shapes.js';
 
 /** @typedef {import('../core/types.js').ModalButton} ModalButton */
@@ -68,7 +68,7 @@ function towMenu(d, o) {
       .filter(k => k.type !== 'node' && k.type !== 'junc')
       .map(k => MD[k.type].n + (k.cond < 60 ? ' (worn)' : ''))
       .join(', ') || 'no machines'
-  }.\n${d.dt === 'tug' ? 'Tug tows at full speed.' : 'Utility drones tow slowly (1 tile per 3 turns).'}\nIt snaps on in whatever orientation fits. Scrapping it at the station (or with a drone carrying a Survey Scanner) teaches you its schematics.`;
+  }.\n${estimateText(salvageEstimate(o, d))}\n\n${d.dt === 'tug' ? 'Tug tows at full speed.' : 'Utility drones tow slowly (1 tile per 3 turns).'} It docks onto a free hallway door. Scrapping it at the station (or with a drone carrying a Survey Scanner) teaches you its schematics.`;
   const park =
     o.sec !== HULL
       ? [
@@ -225,13 +225,14 @@ export function extTap(x, y) {
   }
   if (o) {
     const far = d.sec !== V.sec ? ` (travels from ${d.sec < 0 ? 'transit' : where(d.sec)} first)` : '';
-    if (o.kind === 'debris') {
-      if (d.dt !== 'util') {
-        log(`${DT[d.dt].n} drones cannot carry salvage.`, 'warn');
-        return refresh();
-      }
-      return cmdDrone(d, { type: 'salvage', oid: o.id }, `${d.name}: salvaging debris${far}.`);
-    }
+    if (o.kind === 'debris')
+      return salvageMenu(
+        d,
+        o,
+        'DEBRIS',
+        d.dt !== 'util' ? `${DT[d.dt].n} drones cannot carry salvage.` : null,
+        () => cmdDrone(d, { type: 'salvage', oid: o.id }, `${d.name}: salvaging debris${far}.`),
+      );
     if ((o.kind === 'der' || o.kind === 'core' || o.kind === 'sci') && o.st != null && locked(o))
       return stationMenu(d, stById(o.st));
     if (o.kind === 'null') {
@@ -239,18 +240,24 @@ export function extTap(x, y) {
       return refresh();
     }
     if (o.kind === 'pod' || o.kind === 'wreck' || o.kind === 'sci' || o.kind === 'raft') {
-      if (d.dt === 'guard') {
-        log('Guard drones cannot carry cargo.', 'warn');
-        return refresh();
-      }
-      if (locked(o)) {
-        log('Defense turrets still cover it. Send a Guard drone at the turrets (T) first.', 'warn');
-        return refresh();
-      }
-      return cmdDrone(
+      const what =
+        o.kind === 'wreck'
+          ? DT[o.dt].n + ' wreck'
+          : o.kind === 'sci'
+            ? 'data core'
+            : o.kind === 'raft'
+              ? 'lifeboat'
+              : 'pod';
+      return salvageMenu(
         d,
-        { type: 'fetch', oid: o.id },
-        `${d.name}: retrieving the ${o.kind === 'wreck' ? DT[o.dt].n + ' wreck' : o.kind === 'sci' ? 'data core' : o.kind === 'raft' ? 'lifeboat' : 'pod'}${far}.`,
+        o,
+        what.toUpperCase(),
+        d.dt === 'guard'
+          ? 'Guard drones cannot carry cargo.'
+          : locked(o)
+            ? 'Defense turrets still cover it. Send a Guard drone at the turrets (T) first.'
+            : null,
+        () => cmdDrone(d, { type: 'fetch', oid: o.id }, `${d.name}: retrieving the ${what}${far}.`),
       );
     }
     if (o.kind === 'rogue' || o.kind === 'turret')
@@ -313,6 +320,18 @@ export function extTap(x, y) {
       { type: 'goto', x, y, sec: V.sec },
       `${d.name}: moving to position${d.sec !== V.sec ? ' in ' + where(V.sec) : ''}.`,
     );
+}
+/**
+ * Show what a salvage target probably holds and what threatens it, with one button to send the drone.
+ * @param {string | null} blocked Why this drone cannot do it, if it cannot.
+ */
+function salvageMenu(d, o, title, blocked, go) {
+  const eta =
+    d.sec !== o.sec ? ` (travel about ${travelTime(d.sec < 0 ? G.home : d.sec, o.sec)} turns first)` : '';
+  showModal(title, `${estimateText(salvageEstimate(o, d))}${blocked ? `\n\n${blocked}` : ''}`, [
+    { t: `Send ${d.name}${eta}`, dis: !!blocked, f: go },
+    { t: 'Cancel' },
+  ]);
 }
 /**
  * Corridor pieces a Utility drone can build at a free door. A hallway kit pays for a hallway segment.

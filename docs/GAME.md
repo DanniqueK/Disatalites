@@ -102,6 +102,7 @@ Always visible: LOG and COMBAT scroll panels, STATUS bars (body, suit O2, nutrit
 - Drones come dormant from storage, wrecks, faction pods or the Fabricator, and are activated at a working Drone Rack (2 scrap, 1 circuit). They launch from the free port nearest their rack.
 - Each drone has one task (`d.task.type`), handled in `droneAct`: `idle`, `goto`, `return`, `salvage`, `fetch`, `iface`, `park`, `scrap`, `scrapmod`, `build`, `seal`, `unseal`, `patch`, `tow`, `detach`, `deploy`, `attack`, `hack`.
 - Travel between sectors takes time based on orbital distance. Towing is slower. Thrusters and a pilot crew member speed it up.
+- **Salvage preview** (`salvageEstimate` in `world/salvage.js`): tapping debris, a pod, wreck, lifeboat, data core or loose room shows what it probably holds (exact around the station or with a Survey Scanner, a range further out), threats nearby (rogue drones, live turrets, known null pockets, legacy weapon range, hostiles aboard) and the travel time, with one button to send the drone.
 - Null pockets in drone graveyards destroy drones that drift into them. Known ones are avoided when pathing.
 
 ### Hull editing and structure
