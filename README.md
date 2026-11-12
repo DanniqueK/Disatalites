@@ -24,6 +24,25 @@ To host it, enable GitHub Pages for this repository (Settings > Pages > deploy f
 - R: wait 10 turns · F: fire · G: pick up · L: log · T: labels · ?: help
 - Touch: on-screen pad, tap to walk, tap to use
 
+## Development
+
+The game needs no build. The npm packages are dev tools only (Node 20 or newer):
+
+```sh
+npm install
+npm run check   # format check, lint, type check and tests, the same as CI
+```
+
+| Script              | What it does                                               |
+| ------------------- | ---------------------------------------------------------- |
+| `npm start`         | Serve the game locally                                     |
+| `npm run format`    | Format everything with Prettier                            |
+| `npm run lint`      | ESLint                                                     |
+| `npm run typecheck` | TypeScript checks the JavaScript (`checkJs`) and its JSDoc |
+| `npm test`          | Unit tests with Vitest (`test/`)                           |
+
+CI (`.github/workflows/ci.yml`) runs `format:check`, `lint`, `typecheck` and `test` on every pull request and push to `main`.
+
 ## Documentation
 
 See [docs/GAME.md](docs/GAME.md) for a full feature list and a walkthrough of how the code in `src/` works.

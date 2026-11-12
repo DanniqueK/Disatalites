@@ -6,8 +6,10 @@ import { HULL } from '../space/sectors.js';
 import { log, modalBtns, showModal } from './log-modal.js';
 import { newGame } from '../world/new-game.js';
 
-export function showHelp(){showModal('HOW TO PLAY',
-`You wake alone in a tiny, half-dead cluster of modules over a ruined Earth. KESTREL-9 was always a patchwork of sections from different countries and companies. Rebuild it, grow it, and decide which surface power gets the sky.
+export function showHelp() {
+  showModal(
+    'HOW TO PLAY',
+    `You wake alone in a tiny, half-dead cluster of modules over a ruined Earth. KESTREL-9 was always a patchwork of sections from different countries and companies. Rebuild it, grow it, and decide which surface power gets the sky.
 
 STATION view (inside, you):
  Move with WASD (hold two keys, like W+D, for diagonals), arrows, numpad, vi keys (hjkl yubn) or the pad. R waits 10 turns. Tap a tile to walk there.
@@ -46,18 +48,56 @@ EARTH view (politics):
  Legacy satellites shoot settlements and satellites of anyone not in their IFF tables. Spoofing tags is your strongest lever.
 
 Events are paced by a storyteller: quiet stretches, then trouble, then time to recover. It goes easier on you when you are struggling.
-Keys: Z/X/O/C views, T tags, L log, . or SPACE wait, ? help. Autosaves in this browser.`,[{t:'Close'}])}
-export function showTitle(){
-  const btns=[];
-  if(hasSave())btns.push({t:'Continue saved station',f:()=>{if(loadSave()){log('Session restored.','info');refresh()}else startNew('clone')}});
-  btns.push({t:'Wake from a misfiring CLONE POD (70 body, can re-grow on death)',f:()=>startNew('clone')});
-  btns.push({t:'Wake from CRYO (100 body, worn pistol + armor, one life)',f:()=>startNew('cryo')});
-  btns.push({t:'How to play',f:()=>{showHelp();modalBtns[0].f=showTitle}});
-  showModal('K E S T R E L - 9   //   O R B I T A L   W A R D',
-`Earth below is a nuclear wasteland. The survivors are still in their bunkers, because old defense satellites from long-dead nations fire on anything their IFF tables don't recognize. That is everyone alive.
+Keys: Z/X/O/C views, T tags, L log, . or SPACE wait, ? help. Autosaves in this browser.`,
+    [{ t: 'Close' }],
+  );
+}
+export function showTitle() {
+  const btns = [];
+  if (hasSave())
+    btns.push({
+      t: 'Continue saved station',
+      f: () => {
+        if (loadSave()) {
+          log('Session restored.', 'info');
+          refresh();
+        } else startNew('clone');
+      },
+    });
+  btns.push({
+    t: 'Wake from a misfiring CLONE POD (70 body, can re-grow on death)',
+    f: () => startNew('clone'),
+  });
+  btns.push({ t: 'Wake from CRYO (100 body, worn pistol + armor, one life)', f: () => startNew('cryo') });
+  btns.push({
+    t: 'How to play',
+    f: () => {
+      showHelp();
+      modalBtns[0].f = showTitle;
+    },
+  });
+  showModal(
+    'K E S T R E L - 9   //   O R B I T A L   W A R D',
+    `Earth below is a nuclear wasteland. The survivors are still in their bunkers, because old defense satellites from long-dead nations fire on anything their IFF tables don't recognize. That is everyone alive.
 
 KESTREL-9 was a patchwork relay, built from whatever modules the agencies and companies of the old world could spare. In the cascade it broke apart. All that is left is a handful of mismatched sections, and the feeling that something on board is watching.
 
-You can barely see past your own hull. Out there are other stations, still guarded by their old security cores. Wake up. Get a drone outside. Take what you need, by hacking or by force.`,btns,true);
+You can barely see past your own hull. Out there are other stations, still guarded by their old security cores. Wake up. Get a drone outside. Take what you need, by hacking or by force.`,
+    btns,
+    true,
+  );
 }
-function startNew(s){V.tab='station';V.ecam=null;V.ez=1;V.fx=[];newGame(s);V.sec=HULL;refresh();showModal('WAKE UP',`${s==='clone'?'You fall out of a clone pod that should not have fired. Your memories come back in pieces.':'The cryo lid hisses open. Your breath fogs. The station is dark.'}\n\nThe station has almost nothing left: no scrap in the bins, emergency battery only. Only your pod section answers to you. Every other section runs its own grid and has to be claimed, one Grid Node at a time. Whatever supplies survived are in the Storage section.\n\nFirst: ${OBJ[0].t}\n\nClick machines to use them (or press U next to them). Press HELP or ? anytime.`,[{t:'Start'}])}
+function startNew(s) {
+  V.tab = 'station';
+  V.ecam = null;
+  V.ez = 1;
+  V.fx = [];
+  newGame(s);
+  V.sec = HULL;
+  refresh();
+  showModal(
+    'WAKE UP',
+    `${s === 'clone' ? 'You fall out of a clone pod that should not have fired. Your memories come back in pieces.' : 'The cryo lid hisses open. Your breath fogs. The station is dark.'}\n\nThe station has almost nothing left: no scrap in the bins, emergency battery only. Only your pod section answers to you. Every other section runs its own grid and has to be claimed, one Grid Node at a time. Whatever supplies survived are in the Storage section.\n\nFirst: ${OBJ[0].t}\n\nClick machines to use them (or press U next to them). Press HELP or ? anytime.`,
+    [{ t: 'Start' }],
+  );
+}
