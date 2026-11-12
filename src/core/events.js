@@ -5,7 +5,7 @@
  * @property {undefined} changed  Game state changed; redraw panels and map.
  * @property {Record<string, any>} fx A visual effect (tracer, explosion) to animate.
  * @property {undefined} hurt     The player took damage.
- * @property {{ R: number }} sweep An active sensor sweep went out with radius R.
+ * @property {{ R: number, found: number[] }} sweep An active sensor sweep went out with radius R and found these sectors.
  * @property {{ x: number, y: number }} strike A legacy satellite hit an Earth cell.
  * @property {string} tab         Switch the map to this view.
  * @property {undefined} title    Show the title screen.

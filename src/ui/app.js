@@ -43,9 +43,9 @@ export function installUi() {
     clearTimeout(hurtTimer);
     hurtTimer = setTimeout(() => mw.classList.remove('hurt'), 220);
   });
-  on('sweep', ({ R }) => {
+  on('sweep', ({ R, found }) => {
     if (reducedMotion()) return;
-    V.sweep = { t0: performance.now(), R };
+    V.sweep = { t0: performance.now(), R, found };
   });
   on('strike', ({ x, y }) => {
     if (reducedMotion()) return;
