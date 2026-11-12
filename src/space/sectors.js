@@ -179,7 +179,6 @@ export function genStation(sec, kind, fns, opts) {
     state: 'hostile',
     alert: false,
     known: false,
-    hackp: 0,
     ai: { n: pick(AIN) + '-' + rr(2, 9), perk: pick(Object.keys(PERK)) },
   };
   G.stations.push(st);
@@ -416,6 +415,11 @@ export function genSectors() {
       if (random() < 0.4) addRaft(id);
     }
   }
+}
+/** Short progress text for a station's intrusion console, or '' if no hack has started. */
+export function hackStatus(st) {
+  if (!st || !st.hk) return '';
+  return `${st.hk.i}/${st.hk.L.length} layers bypassed, trace ${Math.round(st.hk.trace)}%`;
 }
 export function hackInit(st) {
   if (st.hk) return;

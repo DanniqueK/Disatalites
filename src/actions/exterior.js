@@ -1,12 +1,12 @@
 import { T } from '../core/constants.js';
-import { BR, CONN, DT, FN, FX, hasAI, hasCrew, MC, MD, stById } from '../core/data.js';
+import { BR, CONN, DT, FN, FX, MC, MD, stById } from '../core/data.js';
 import { log } from '../core/messages.js';
 import { G, M, V } from '../core/state.js';
 import { cheb, dirName, idx, inB, rr } from '../core/util.js';
 import { atHatch, cargoLoad } from '../sim/exterior-tick.js';
 import { refresh } from '../sim/turn.js';
 import { derHit, hatchOf, objById } from '../space/exterior-objects.js';
-import { HULL, LC, locked, tagName, where } from '../space/sectors.js';
+import { hackStatus, HULL, LC, locked, tagName, where } from '../space/sectors.js';
 import { showModal } from '../ui/log-modal.js';
 import { setTab } from '../ui/panels.js';
 import { render } from '../ui/render.js';
@@ -532,17 +532,15 @@ function ifaceOpts(d, m, mi) {
   return o;
 }
 function stationMenu(d, st) {
-  const req = 25 * st.ice,
-    pw = 1 + (hasCrew('hacker') ? 1 : 0) + (hasAI('cipher') ? 2 : 0);
   const tur = G.ext.objs.filter(o => o.st === st.id && o.kind === 'turret').length;
   const core = G.ext.objs.find(o => o.st === st.id && o.kind === 'core');
   showModal(
     st.name.toUpperCase(),
     `${BR[st.brand].n} (${BR[st.brand].cc}) ${st.kind} station. Security level ${st.ice}.
 Status: ${st.alert ? 'ALERT, turrets firing at range' : 'passive, turrets only fire up close'}. Turrets: ${tur}. Core integrity: ${core ? core.hp + '/' + core.max : '?'}.
-Hack progress: ${st.hackp}/${req} (+${pw} per turn).
+Intrusion: ${hackStatus(st) || 'not started'}.
 
-HACK (Utility drone): park against the hull and crack the security core. Quiet but slow. Each turn there is a chance it notices you and goes to alert. Success keeps every section intact, may free prisoners, and lets you recruit or wipe its AI.
+HACK (Utility drone): park against the hull and work through its security layers in the intrusion console. Quiet, but trace builds up, and at 100% the link burns and the station goes to alert. Success keeps every section intact, may free prisoners, and lets you recruit or wipe its AI.
 
 BRUTE FORCE (Guard drones): kill the turrets and the core. Loud. About a third of its sections break apart into debris, and the AI dies with the core.`,
     [
@@ -630,7 +628,7 @@ function taskText2(d, t) {
       const st = stById(t.st);
       if (t.on && st && st.hk)
         return `hacking L${st.hk.i + 1}/${st.hk.L.length} trace ${Math.round(st.hk.trace)}%${t.auto ? ' (script)' : ''}`;
-      return st ? `hacking ${Math.floor((st.hackp / (25 * st.ice)) * 100)}%` : 'hacking';
+      return 'hacking';
     }
   }
   return t.type;

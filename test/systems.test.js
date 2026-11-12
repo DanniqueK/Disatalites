@@ -4,7 +4,7 @@ import { MD } from '../src/core/data.js';
 import { G, M } from '../src/core/state.js';
 import { atmoTick, gridTick, powerTick } from '../src/sim/turn.js';
 import { isHome } from '../src/space/earth.js';
-import { hackInit, hackTurn } from '../src/space/sectors.js';
+import { hackInit, hackStatus, hackTurn } from '../src/space/sectors.js';
 import { territoryTick } from '../src/space/earth.js';
 import { consumers, game, generators, machinesOf, ownEverything } from './helpers.js';
 
@@ -158,6 +158,15 @@ describe('intrusion console', () => {
     expect(st.alert).toBe(true);
     expect(d.task.type).toBe('idle');
     expect(d.hp).toBe(22);
+  });
+
+  it('hackStatus reports real console progress (the old hackp counter is gone)', () => {
+    expect(st.hackp).toBeUndefined();
+    expect(hackStatus({ ...st, hk: null })).toBe('');
+    st.hk.L[0] = { k: 'AUTH', hp: 0, max: 5, known: true };
+    st.hk.trace = 12;
+    cmd('probe');
+    expect(hackStatus(st)).toBe(`1/${st.hk.L.length} layers bypassed, trace 15%`);
   });
 
   it('breaking every layer subdues the station', () => {
