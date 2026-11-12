@@ -1,10 +1,11 @@
 import { T, WALK, WH, WW } from '../core/constants.js';
 import { BR, EN } from '../core/data.js';
+import { log } from '../core/messages.js';
+import { random } from '../core/rng.js';
 import { G, M, P } from '../core/state.js';
-import { D4, D8, cheb, dirName, idx, inB, pick } from '../core/util.js';
+import { cheb, D4, D8, dirName, idx, inB, pick } from '../core/util.js';
 import { addFx } from '../sim/stats.js';
 import { HULL } from '../space/sectors.js';
-import { log } from '../ui/log-modal.js';
 import { online } from './machines.js';
 import { cloneShape, portWorld, rotD, rotDims, rotP, setCell, toLocal, toWorld } from './shapes.js';
 
@@ -535,11 +536,11 @@ export function stressTick() {
     if (!j.load) continue;
     const r = j.load / j.cap;
     if (r <= 1) continue;
-    if (Math.random() < Math.min(0.5, (r - 1) * 0.35)) {
+    if (random() < Math.min(0.5, (r - 1) * 0.35)) {
       const ch = G.mods[j.child];
       if (!ch) continue;
       const ci = j.child;
-      if (r > 2.2 && Object.keys(ch.links).length === 1 && canDetach(ci) === null && Math.random() < 0.4) {
+      if (r > 2.2 && Object.keys(ch.links).length === 1 && canDetach(ci) === null && random() < 0.4) {
         const { pack, cx, cy } = packModule(ci);
         pack.redock = true;
         G.ext.objs.push({ id: G.nid++, sec: HULL, kind: 'der', x: cx, y: cy, pack, tow: null });
@@ -829,4 +830,20 @@ export function addBreachMod(mi, noRebuild) {
 export function removeBreach(b) {
   for (const m of G.mods) m.breaches = m.breaches.filter(x => x.id !== b.id);
   rebuildMap();
+}
+
+export function hullNear(m, x, y) {
+  let best = null,
+    bd = 1e9;
+  for (const c of modCells(m)) {
+    if (c.c !== '#') continue;
+    if (!D4.some(([dx, dy]) => inB(c.x + dx, c.y + dy) && M.map[idx(c.x + dx, c.y + dy)] === T.VOID))
+      continue;
+    const dd = Math.hypot(c.x - x, c.y - y);
+    if (dd < bd) {
+      bd = dd;
+      best = [c.x, c.y];
+    }
+  }
+  return best;
 }

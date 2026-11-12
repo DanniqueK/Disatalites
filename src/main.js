@@ -1,13 +1,11 @@
 import { launchCargo, spoofMenu, startSurvey, strikeMenu } from './actions/earth.js';
 import { cycleDrone, extTap } from './actions/exterior.js';
 import {
-  canAct,
   cycleTarget,
   eat,
   fire,
   itemMenu,
   machineMenu,
-  machineStatus,
   partMenu,
   patchMenu,
   pickup,
@@ -16,20 +14,22 @@ import {
 } from './actions/player.js';
 import { EGH, EGW, T, WALK, WH, WW } from './core/constants.js';
 import { FAC, MD, OG } from './core/data.js';
+import { log } from './core/messages.js';
 import { save } from './core/save.js';
 import { G, M, P, V } from './core/state.js';
-import { $, D8, cheb, clamp, idx, inB } from './core/util.js';
+import { cheb, clamp, D8, idx, inB } from './core/util.js';
 import { releaseSat } from './sim/earth-tick.js';
 import { actorAt } from './sim/stats.js';
-import { endTurn, refresh, waitN } from './sim/turn.js';
+import { canAct, endTurn, refresh, waitN } from './sim/turn.js';
 import { cellName } from './space/earth.js';
 import { machAt } from './space/sectors.js';
+import { installUi } from './ui/app.js';
+import { $ } from './ui/dom.js';
 import { showHelp, showTitle } from './ui/help-title.js';
-import { closeModal, log, modalKeys, modalOpen, pickModal, showLog } from './ui/log-modal.js';
+import { closeModal, modalKeys, pickModal, showLog } from './ui/log-modal.js';
 import { padAction, setTab } from './ui/panels.js';
 import {
   CAM,
-  TS,
   cssH,
   cssW,
   cv,
@@ -41,9 +41,12 @@ import {
   orbitTapAt,
   render,
   resize,
+  TS,
 } from './ui/render.js';
+import { machineStatus } from './world/machines.js';
 import { newGame } from './world/new-game.js';
 
+installUi();
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) save();
 });
@@ -145,20 +148,20 @@ function travelTo(tx, ty) {
 }
 $('#tabs').addEventListener('click', e => {
   const b = e.target.closest('button');
-  if (b && !modalOpen) setTab(b.dataset.tab);
+  if (b && !V.modalOpen) setTab(b.dataset.tab);
 });
 $('#pad').addEventListener('pointerdown', e => {
   const b = e.target.closest('button');
   if (!b) return;
   e.preventDefault();
   stopTravel();
-  if (!modalOpen || b.dataset.a === 'help') padAction(b.dataset.a);
+  if (!V.modalOpen || b.dataset.a === 'help') padAction(b.dataset.a);
 });
 $('#tail').addEventListener('click', () => {
-  if (!modalOpen && G) showLog();
+  if (!V.modalOpen && G) showLog();
 });
 $('#side').addEventListener('click', e => {
-  if (modalOpen || !G) return;
+  if (V.modalOpen || !G) return;
   const t = e.target;
   const pb = t.closest('.pbtn,.key');
   if (pb && !pb.disabled) {
@@ -372,16 +375,16 @@ function wasdKey(e) {
       V.ecam.x += dx * 3;
       V.ecam.y += dy * 3;
       render();
-    } else if (V.tab === 'station' && !modalOpen && G && !G.over) playerMove(dx, dy);
+    } else if (V.tab === 'station' && !V.modalOpen && G && !G.over) playerMove(dx, dy);
   }, 45);
   return true;
 }
 document.addEventListener('keydown', e => {
-  if (!modalOpen && WK[e.code] && G && !G.over && (V.tab === 'station' || V.tab === 'ext')) {
+  if (!V.modalOpen && WK[e.code] && G && !G.over && (V.tab === 'station' || V.tab === 'ext')) {
     stopTravel();
     if (wasdKey(e)) return;
   }
-  if (modalOpen) {
+  if (V.modalOpen) {
     if (/^[1-9]$/.test(e.key)) {
       e.preventDefault();
       const i = modalKeys[+e.key - 1];

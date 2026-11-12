@@ -944,3 +944,130 @@ export function mk(key, frac) {
   if (d.hp) it.hp = Math.max(1, Math.round(d.hp * (frac == null ? 1 : frac)));
   return it;
 }
+
+/* prefab connector pieces: floor cells + ports [x,y,dx,dy] in a little local grid */
+export const CONN = {
+  collar: {
+    n: 'Docking collar',
+    d: 'A short coupler that pushes a port out by two tiles.',
+    f: [
+      [1, 0],
+      [2, 0],
+    ],
+    p: [
+      [0, 0, -1, 0],
+      [3, 0, 1, 0],
+    ],
+  },
+  straight: {
+    n: 'Straight tube',
+    d: 'Five-tile corridor.',
+    f: [
+      [1, 0],
+      [2, 0],
+      [3, 0],
+      [4, 0],
+      [5, 0],
+    ],
+    p: [
+      [0, 0, -1, 0],
+      [6, 0, 1, 0],
+    ],
+  },
+  long: {
+    n: 'Long spine',
+    d: 'Nine-tile corridor for reaching far.',
+    f: [
+      [1, 0],
+      [2, 0],
+      [3, 0],
+      [4, 0],
+      [5, 0],
+      [6, 0],
+      [7, 0],
+      [8, 0],
+      [9, 0],
+    ],
+    p: [
+      [0, 0, -1, 0],
+      [10, 0, 1, 0],
+    ],
+  },
+  elbow: {
+    n: 'Elbow',
+    d: 'A 90 degree bend.',
+    f: [
+      [1, 0],
+      [2, 0],
+      [2, 1],
+      [2, 2],
+    ],
+    p: [
+      [0, 0, -1, 0],
+      [2, 3, 0, 1],
+    ],
+  },
+  tee: {
+    n: 'T-junction',
+    d: 'Splits one line into two. Three ports.',
+    f: [
+      [1, 0],
+      [2, 0],
+      [3, 0],
+      [2, 1],
+      [2, 2],
+    ],
+    p: [
+      [0, 0, -1, 0],
+      [4, 0, 1, 0],
+      [2, 3, 0, 1],
+    ],
+  },
+  cross: {
+    n: 'Cross',
+    d: 'Four-way junction. Good for closing loops.',
+    f: [
+      [2, 1],
+      [1, 2],
+      [2, 2],
+      [3, 2],
+      [2, 3],
+    ],
+    p: [
+      [0, 2, -1, 0],
+      [4, 2, 1, 0],
+      [2, 0, 0, -1],
+      [2, 4, 0, 1],
+    ],
+  },
+  hub: {
+    n: 'Node hub',
+    d: 'A small pressurized room with a port on every side.',
+    f: [
+      [1, 1],
+      [2, 1],
+      [3, 1],
+      [1, 2],
+      [2, 2],
+      [3, 2],
+      [1, 3],
+      [2, 3],
+      [3, 3],
+    ],
+    p: [
+      [0, 2, -1, 0],
+      [4, 2, 1, 0],
+      [2, 0, 0, -1],
+      [2, 4, 0, 1],
+    ],
+  },
+};
+
+/* ---------- intrusion console ---------- */
+export const HK = {
+  AUTH: { n: 'AUTH GATE', d: 'Wants a valid handshake. A spoofed one walks right through.' },
+  FIREWALL: { n: 'FIREWALL', d: 'Shrugs off brute force. A worm gets through.' },
+  WATCHDOG: { n: 'WATCHDOG', d: 'Raises trace every turn you sit on it.' },
+  ICE: { n: 'BLACK ICE', d: 'Fights back: brute force burns the drone.' },
+  CORE: { n: 'SECURITY CORE', d: 'Crack it and the station is yours.' },
+};

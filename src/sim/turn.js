@@ -1,21 +1,20 @@
-import { canAct, fabDone } from '../actions/player.js';
 import { T } from '../core/constants.js';
-import { EN, MD, OBJ, RC, hasAI } from '../core/data.js';
+import { EN, hasAI, MD, mk, OBJ, RC } from '../core/data.js';
+import { emit } from '../core/events.js';
+import { cmb, log } from '../core/messages.js';
+import { random } from '../core/rng.js';
 import { save } from '../core/save.js';
 import { G, M, P, V } from '../core/state.js';
-import { D8, cheb, clamp, idx, inB, pick, roll } from '../core/util.js';
+import { cheb, clamp, D8, idx, inB, pick, roll } from '../core/util.js';
 import { earthTick, firstContact } from './earth-tick.js';
 import { playerDied } from './end.js';
 import { atHatch, extTick } from './exterior-tick.js';
 import { addFx, hurtPlayer, occupied, stats } from './stats.js';
 import { directorTick } from './storyteller.js';
-import { HULL, allyTick, crewTick, hackConsole } from '../space/sectors.js';
-import { cmb, flushModals, log, modalOpen } from '../ui/log-modal.js';
-import { updateUI } from '../ui/panels.js';
-import { render } from '../ui/render.js';
+import { allyTick, crewTick, HULL } from '../space/sectors.js';
 import { modIndex, removeBreach, stressTick } from '../world/build.js';
 import { bfsInt, fov, intNext, los, pressureAt } from '../world/fov.js';
-import { addStock, commsOnline, ctlOK, online } from '../world/machines.js';
+import { addStock, commsOnline, ctlOK, dropNear, online } from '../world/machines.js';
 
 export function endTurn(quiet) {
   G.turn++;
@@ -41,27 +40,14 @@ export function waitN(n) {
   G.intr = false;
   for (let i = 0; i < n; i++) {
     endTurn(true);
-    if (G.over || G.intr || modalOpen || V.modalQ.length) break;
+    if (G.over || G.intr || V.modalOpen || V.modalQ.length) break;
   }
   refresh();
 }
-function maybeHack() {
-  if (!modalOpen && V.hackOpen != null && G && !G.over) {
-    const d = G.ext.drones.find(x => x.id === V.hackOpen);
-    if (d)
-      setTimeout(() => {
-        if (!modalOpen && V.hackOpen === d.id) hackConsole(d);
-      }, 0);
-    else V.hackOpen = null;
-  }
-}
 export function refresh() {
-  maybeHack();
-  updateUI();
-  render();
-  flushModals();
+  emit('changed');
 }
-function gridTick() {
+export function gridTick() {
   const jOK = G.mods.map(() => true);
   for (const k of G.machines) if (k.type === 'junc' && k.mi != null && k.cond < 60) jOK[k.mi] = false;
   const src = G.mods.map((m, mi) => mi === 0);
@@ -99,7 +85,7 @@ export const onGrid = m => {
   const md = G.mods[m.mi];
   return !md || md.onGrid !== false;
 };
-function powerTick() {
+export function powerTick() {
   gridTick();
   stressTick();
   let gen = G.allies.filter(a => a.perk === 'grid').length * 5,
@@ -153,7 +139,7 @@ function powerTick() {
       G.hot,
   );
 }
-function atmoTick() {
+export function atmoTick() {
   let capS = 0;
   for (const m of G.machines)
     if ((m.type === 'scrubber' || m.type === 'escrub') && online(m)) capS += MD[m.type].cap;
@@ -323,14 +309,14 @@ function actOne(a) {
   const S = stats();
   if (sees && d.w.melee && dp === 1) {
     const ch = clamp(d.w.acc - S.eva, 8, 95),
-      hit = Math.random() * 100 < ch;
+      hit = random() * 100 < ch;
     cmb(`${d.n} strikes (${ch}%) ${hit ? 'Hit' : 'Miss'}`, hit ? 'bad' : '');
     if (hit) hurtPlayer(roll(d.w.d), d.n);
     return;
   }
   if (sees && d.w.r && dp <= d.w.r && los(a.x, a.y, P.x, P.y)) {
     const ch = clamp(d.w.acc - S.eva, 8, 95),
-      hit = Math.random() * 100 < ch;
+      hit = random() * 100 < ch;
     addFx({ k: 'tr', x0: a.x, y0: a.y, x1: P.x, y1: P.y, c: '#ff8a6a', dur: 200 });
     cmb(`${d.n} fires (${ch}%) ${hit ? 'Hit' : 'Miss'}`, hit ? 'bad' : '');
     if (hit) hurtPlayer(roll(d.w.d), d.n);
@@ -355,7 +341,7 @@ function actOne(a) {
       a.x = best[0];
       a.y = best[1];
     }
-  } else if (Math.random() < 0.4) {
+  } else if (random() < 0.4) {
     const [dx, dy] = pick(D8);
     const nx = a.x + dx,
       ny = a.y + dy;
@@ -376,5 +362,61 @@ function objTick() {
     addStock('scrap', 4);
     addStock('circ', 2);
     log(`OBJECTIVE COMPLETE (+4 scrap, +2 circuits). Next: ${OBJ[G.obj].t}`, 'good');
+  }
+}
+
+/** True when the player may act: a game is running and no dialog is open. */
+export const canAct = () => G && !G.over && !V.modalOpen;
+
+export function fabDone(k, m) {
+  if (k.startsWith('drone_')) {
+    dropNear(m.x, m.y, mk('dorm_' + k.slice(6)));
+    log(`Fabricator: ${RC[k].n} assembled (dormant). Carry it to a Drone Rack.`, 'good');
+  } else if (k === 'tube') {
+    G.kits++;
+    log(
+      'Fabricator: connector tube kit ready. A Utility drone can weld it onto a free port (EXTERIOR).',
+      'good',
+    );
+  } else if (k.startsWith('sat_')) {
+    const s = k.slice(4);
+    G.sats[s]++;
+    log(`Fabricator: ${s} satellite ready. Deploy it with a drone or the Launch Rail.`, 'good');
+  } else if (k === 'ammo') {
+    addStock('ammo', 20);
+    log('Fabricator: +20 ammo.', 'good');
+  } else if (k === 'slot') {
+    P.cap.suit = Math.min(4, P.cap.suit + 1);
+    log('Fabricator: suit hardpoint fitted. +1 suit slot.', 'good');
+  } else if (k === 'scanmod') {
+    const d = G.ext.drones.find(d => !d.scan && atHatch(d)) || G.ext.drones.find(d => !d.scan);
+    if (d) {
+      d.scan = true;
+      log(
+        `Fabricator: Survey Scanner fitted to ${d.name}. Sections it scraps in the field still teach you their schematics.`,
+        'good',
+      );
+    } else {
+      G.scanSpare = (G.scanSpare || 0) + 1;
+      log('Fabricator: Survey Scanner ready. It will be fitted to the next drone you activate.', 'good');
+    }
+  } else if (k === 'iface') {
+    const d = G.ext.drones.find(d => !d.iface && atHatch(d)) || G.ext.drones.find(d => !d.iface);
+    if (d) {
+      d.iface = true;
+      log(
+        `Fabricator: Interface Module fitted to ${d.name}. It can now jack into grid nodes from outside the hull.`,
+        'good',
+      );
+    } else {
+      G.ifaceSpare = (G.ifaceSpare || 0) + 1;
+      log('Fabricator: Interface Module ready. It will be fitted to the next drone you activate.', 'good');
+    }
+  } else if (k === 'thrust') {
+    G.thrust = true;
+    log('Fabricator: drone thrusters fitted. The fleet moves faster.', 'good');
+  } else {
+    dropNear(m.x, m.y, mk(k));
+    log(`Fabricator: ${RC[k].n} ready, placed next to the fabricator.`, 'good');
   }
 }

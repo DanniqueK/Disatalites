@@ -1,5 +1,8 @@
 import { T } from '../core/constants.js';
-import { FAC, RC, TAGK, hasAI, rivalsOf } from '../core/data.js';
+import { FAC, hasAI, RC, rivalsOf, TAGK } from '../core/data.js';
+import { emit } from '../core/events.js';
+import { log, queueModal } from '../core/messages.js';
+import { random } from '../core/rng.js';
 import { G, M } from '../core/state.js';
 import { clamp, idx, pick, rnd, rr } from '../core/util.js';
 import { endGame } from './end.js';
@@ -7,8 +10,6 @@ import { occupied } from './stats.js';
 import { cellName, frontierCell, legacyTick, shares, territoryTick } from '../space/earth.js';
 import { addPod, addRogue } from '../space/exterior-objects.js';
 import { genStation, revealSector } from '../space/sectors.js';
-import { log, queueModal } from '../ui/log-modal.js';
-import { setTab } from '../ui/panels.js';
 import { addBreachMod, modCells } from '../world/build.js';
 import { addStock, commsOnline, hasOnline } from '../world/machines.js';
 
@@ -35,7 +36,7 @@ Rivalries: COMPACT vs COVENANT, COVENANT vs SAHEL, COMPACT vs TIDEWATER.
 They have called an Accord in 4500 cycles. Every satellite you put up and every IFF table you spoof shifts the balance.
 
 Satellite schematics received: WEATHER, NAV, RECON.`,
-    [{ t: 'Open EARTH view', f: () => setTab('earth') }, { t: 'Close' }],
+    [{ t: 'Open EARTH view', f: () => emit('tab', 'earth') }, { t: 'Close' }],
   );
 }
 function genReq(fi) {
@@ -85,22 +86,22 @@ function podFor(f) {
   if (f === 0) {
     c.circ = rr(8, 14);
     c.scrap = rr(4, 8);
-    if (Math.random() < 0.4) c.items.push(pick(['scanner', 'o2tank']));
+    if (random() < 0.4) c.items.push(pick(['scanner', 'o2tank']));
   }
   if (f === 1) {
     c.scrap = rr(12, 20);
     c.ammo = rr(15, 30);
-    if (Math.random() < 0.6) c.items.push(pick(['carbine', 'scatter', 'armor', 'cutter', 'dorm_guard']));
+    if (random() < 0.6) c.items.push(pick(['carbine', 'scatter', 'armor', 'cutter', 'dorm_guard']));
   }
   if (f === 2) {
     c.rat = rr(5, 9);
     c.scrap = rr(4, 8);
-    if (Math.random() < 0.6) c.items.push('medkit');
+    if (random() < 0.6) c.items.push('medkit');
   }
   if (f === 3) {
     c.scrap = rr(10, 16);
     c.circ = rr(4, 8);
-    if (Math.random() < 0.5) c.items.push(pick(['magboots', 'liner', 'dorm_util', 'dorm_tug']));
+    if (random() < 0.5) c.items.push(pick(['magboots', 'liner', 'dorm_util', 'dorm_tug']));
   }
   return c;
 }
@@ -136,7 +137,7 @@ export function completeReq(r, how) {
     loss = { sat: 8, relay: 3, survey: 10, cargo: 4, spoof: 12 }[r.type];
   changeRep(r.f, gain);
   for (const rv of rivalsOf(r.f)) {
-    const det = r.type === 'survey' || r.type === 'spoof' ? Math.random() < 0.5 : true;
+    const det = r.type === 'survey' || r.type === 'spoof' ? random() < 0.5 : true;
     if (det) changeRep(rv, -loss);
   }
   G.fac[r.f].boost += { sat: 4, relay: 3, survey: 5, cargo: 5, spoof: 3 }[r.type];
@@ -206,12 +207,12 @@ export function earthTick() {
 }
 function sabotageTick() {
   G.fac.forEach((f, i) => {
-    if (f.rep > -40 || Math.random() > 0.25) return;
-    if (G.droneUnlocked && Math.random() < 0.6) {
+    if (f.rep > -40 || random() > 0.25) return;
+    if (G.droneUnlocked && random() < 0.6) {
       addRogue(i);
       addRogue(i);
       log(`${FAC[i].sh} hacked drones are inbound.`, 'bad');
-    } else if (Math.random() < 0.5) {
+    } else if (random() < 0.5) {
       const mi = rnd(G.mods.length);
       const b = addBreachMod(mi);
       if (b) {
@@ -243,13 +244,13 @@ function sabotageTick() {
 function spoofResolve(s) {
   const L = G.legacy[s.lid];
   const ch = 55 + (hasOnline('sensor') ? 20 : 0) + (hasAI('cipher') ? 15 : 0);
-  if (Math.random() * 100 < ch && s.f === TAGK) {
+  if (random() * 100 < ch && s.f === TAGK) {
     L.tags.push(TAGK);
     G.stat.spoofs++;
     log(`IFF spoof successful: ${L.n} now ignores KESTREL-9 drones.`, 'good');
     return;
   }
-  if (Math.random() * 100 < ch) {
+  if (random() * 100 < ch) {
     L.tags.push(s.f);
     G.stat.spoofs++;
     log(
@@ -262,7 +263,7 @@ function spoofResolve(s) {
       changeRep(s.f, 10);
       G.fac[s.f].boost += 2;
     }
-    for (const rv of rivalsOf(s.f)) if (Math.random() < 0.4) changeRep(rv, -8);
+    for (const rv of rivalsOf(s.f)) if (random() < 0.4) changeRep(rv, -8);
   } else {
     const c = G.machines.find(m => m.type === 'comms');
     if (c) c.cond -= 25;

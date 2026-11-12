@@ -2,12 +2,17 @@ import { T, WALK, WH, WW } from '../core/constants.js';
 import {
   AILINES,
   AIN,
+  altOf,
+  bandOf,
   BR,
   BRANDS,
   CHAT,
   CREWN,
   CREWS,
   FAC,
+  hasAI,
+  hasCrew,
+  HK,
   MD,
   OC,
   OG,
@@ -16,21 +21,19 @@ import {
   RINGS,
   ROLE,
   SEC_T,
+  stById,
   STN,
   TAGK,
-  altOf,
-  bandOf,
-  hasAI,
-  hasCrew,
-  stById,
 } from '../core/data.js';
+import { emit } from '../core/events.js';
+import { log, queueModal } from '../core/messages.js';
+import { random } from '../core/rng.js';
 import { G, M, P, V } from '../core/state.js';
-import { D8, cheb, clamp, esc, idx, inB, pick, pickW, rnd, rr, shuffle } from '../core/util.js';
+import { cheb, clamp, D8, idx, inB, pick, pickW, rnd, rr, shuffle } from '../core/util.js';
 import { killDrone } from '../sim/exterior-tick.js';
 import { occupied } from '../sim/stats.js';
 import { endTurn, refresh } from '../sim/turn.js';
 import { addRogue, objById, randSpace, removeObj, stationBox } from './exterior-objects.js';
-import { log, queueModal, showModal } from '../ui/log-modal.js';
 import { addBreachMod, derFits, nearestVoid, removeBreach } from '../world/build.js';
 import { pressureAt } from '../world/fov.js';
 import { addStock, commsOnline, hasOnline, online } from '../world/machines.js';
@@ -49,10 +52,10 @@ export function initSectors() {
   G.sectors = [];
   let id = 0;
   RINGS.forEach((b, r) => {
-    const off = Math.random() * Math.PI * 2;
+    const off = random() * Math.PI * 2;
     for (let k = 0; k < b.cnt; k++) {
-      const ang = off + ((k + 0.5 + (Math.random() - 0.5) * 0.5) / b.cnt) * Math.PI * 2;
-      const rad = b.r0 + 1.5 + Math.random() * (b.r1 - b.r0 - 3);
+      const ang = off + ((k + 0.5 + (random() - 0.5) * 0.5) / b.cnt) * Math.PI * 2;
+      const rad = b.r0 + 1.5 + random() * (b.r1 - b.r0 - 3);
       G.sectors.push({
         id: id++,
         ring: r,
@@ -144,8 +147,8 @@ export function buildRegions() {
 }
 function rsp(sec, cx, cy, r) {
   for (let k = 0; k < 300; k++) {
-    const x = clamp(Math.round(cx + (Math.random() * 2 - 1) * r), 3, WW - 4),
-      y = clamp(Math.round(cy + (Math.random() * 2 - 1) * r), 3, WH - 4);
+    const x = clamp(Math.round(cx + (random() * 2 - 1) * r), 3, WW - 4),
+      y = clamp(Math.round(cy + (random() * 2 - 1) * r), 3, WH - 4);
     if (G.ext.objs.some(o => o.sec === sec && cheb(o.x, o.y, x, y) < 3)) continue;
     return [x, y];
   }
@@ -188,7 +191,7 @@ export function genStation(sec, kind, fns, opts) {
     const pk = fillDerelict(makePack(fn, brand, { fill: 'station', kind }), !!opts.calm);
     pk.pressure = rr(15, 55);
     pk.ctl = false;
-    pk.haywire = Math.random() < 0.4;
+    pk.haywire = random() < 0.4;
     pk.crates.forEach(c => {
       c.c.scrap += 2;
     });
@@ -308,7 +311,7 @@ export function genSectors() {
           res: {
             scrap: rr(6, 14) * (rich ? 2 : 1),
             circ: rr(2, 6) * (rich ? 2 : 1),
-            rat: Math.random() < 0.3 ? rr(1, 3) : 0,
+            rat: random() < 0.3 ? rr(1, 3) : 0,
           },
           seen: false,
         });
@@ -348,7 +351,7 @@ export function genSectors() {
           tag: 'swarm',
           seen: false,
         });
-      if (Math.random() < 0.35) addRaft(id);
+      if (random() < 0.35) addRaft(id);
     }
     if (s.type === 'station') {
       const st = s.comms
@@ -356,7 +359,7 @@ export function genSectors() {
         : genStation(id, 'civil');
       s.name = st ? st.name : 'Foreign station';
       deb(3, 30);
-      if (Math.random() < 0.2) addRaft(id);
+      if (random() < 0.2) addRaft(id);
     }
     if (s.type === 'military') {
       const st = genStation(id, 'military');
@@ -410,18 +413,10 @@ export function genSectors() {
     if (s.type === 'quiet') {
       s.name = 'Quiet orbit';
       deb(3, 30);
-      if (Math.random() < 0.4) addRaft(id);
+      if (random() < 0.4) addRaft(id);
     }
   }
 }
-/* ---------- intrusion console ---------- */
-const HK = {
-  AUTH: { n: 'AUTH GATE', d: 'Wants a valid handshake. A spoofed one walks right through.' },
-  FIREWALL: { n: 'FIREWALL', d: 'Shrugs off brute force. A worm gets through.' },
-  WATCHDOG: { n: 'WATCHDOG', d: 'Raises trace every turn you sit on it.' },
-  ICE: { n: 'BLACK ICE', d: 'Fights back: brute force burns the drone.' },
-  CORE: { n: 'SECURITY CORE', d: 'Crack it and the station is yours.' },
-};
 export function hackInit(st) {
   if (st.hk) return;
   const L = [];
@@ -506,10 +501,10 @@ export function hackTurn(d, st, t) {
     hkLine(st, 'going dark. trace falling.');
   }
   if (cur.k === 'WATCHDOG' && cmd !== 'dark') hkTrace(st, 3);
-  if (cur.k === 'CORE' && st.mad && Math.random() < 0.12) {
+  if (cur.k === 'CORE' && st.mad && random() < 0.12) {
     hkTrace(st, 12);
     hkLine(st, '!! something on the other end reaches back up the link');
-    if (H.trace >= 80 && Math.random() < 0.5) {
+    if (H.trace >= 80 && random() < 0.5) {
       log(`${st.name} reaches back down the link. ${d.name} goes quiet, then turns on you.`, 'bad');
       G.ext.drones = G.ext.drones.filter(x => x !== d);
       if (G.sel === d.id) G.sel = G.ext.drones[0] ? G.ext.drones[0].id : null;
@@ -544,88 +539,6 @@ export function hackTurn(d, st, t) {
     if (d.hp <= 0) killDrone(d, 'a power surge');
   }
 }
-export function hackConsole(d) {
-  const t = d && d.task;
-  if (!t || t.type !== 'hack' || !t.on) {
-    V.hackOpen = null;
-    return;
-  }
-  const st = stById(t.st);
-  if (!st || !st.hk) {
-    V.hackOpen = null;
-    return;
-  }
-  const H = st.hk,
-    cur = H.L[H.i];
-  const tr = Math.round(H.trace);
-  let gauge = '';
-  for (let k = 0; k < 25; k++) {
-    const on = k < tr / 4;
-    gauge += `<i style="background:${on ? (k >= 20 ? '#ff3a2a' : k >= 14 ? '#e0b020' : '#2fbf4f') : '#0b140c'}"></i>`;
-  }
-  const plates = H.L.map((l, k) => {
-    const done = k < H.i,
-      curr = k === H.i;
-    const nm = l.known || done ? HK[l.k].n : '???';
-    const bar = curr
-      ? `<span class="hpb">${'█'.repeat(Math.max(0, l.hp))}${'░'.repeat(Math.max(0, l.max - Math.max(0, l.hp)))}</span>`
-      : '';
-    return `<div class="ice ${done ? 'done' : curr ? 'cur' : ''}"><span>${k + 1}</span><b>${nm}</b>${bar}${done ? '<em>BYPASSED</em>' : ''}</div>`;
-  }).join('');
-  const html = `<div class="hk"><div class="hkrow"><div class="hkst">${plates}</div><div class="hkr"><div class="lbl">TRACE ${tr}%</div><div class="tg">${gauge}</div>
-    <div class="lcd tty">${H.lines.map(esc).join('<br>')}</div></div></div>
-    <div class="dim" style="font-size:12px;margin-top:6px">${cur.known ? esc(HK[cur.k].d) : 'Unknown layer. Probe it to see what it is (and double your next brute force).'}${hasCrew('hacker') ? ' Your hacker keeps trace gains down.' : ''}</div></div>`;
-  showModal(
-    `INTRUSION · ${d.name} > ${st.name.toUpperCase()}`,
-    html,
-    [
-      { t: 'Probe (+3 trace)', f: () => hackCmd(d, 'probe') },
-      { t: 'Spoof handshake (1 circ)', dis: G.stock.circ < 1, f: () => hackCmd(d, 'spoof') },
-      { t: 'Brute force (+8 trace)', f: () => hackCmd(d, 'brute') },
-      { t: 'Inject worm (1 circ)', dis: G.stock.circ < 1, f: () => hackCmd(d, 'worm') },
-      { t: 'Go dark (-15 trace)', f: () => hackCmd(d, 'dark') },
-      {
-        t: 'Let the drone run its script',
-        f: () => {
-          t.auto = 1;
-          V.hackOpen = null;
-          log(`${d.name} runs its intrusion script on its own.`);
-          refresh();
-        },
-      },
-      {
-        t: 'Disconnect',
-        k: 'danger',
-        f: () => {
-          t.on = 0;
-          d.task = { type: 'idle' };
-          V.hackOpen = null;
-          log(`${d.name} pulls out of the ${st.name}. Bypassed layers stay open for now.`);
-          refresh();
-        },
-      },
-      {
-        t: 'Close',
-        k: 'close',
-        f: () => {
-          V.hackOpen = null;
-          t.auto = 1;
-          refresh();
-        },
-      },
-    ],
-    false,
-    true,
-  );
-}
-function hackCmd(d, c) {
-  const t = d.task;
-  if (!t || t.type !== 'hack') return;
-  t.cmd = c;
-  t.auto = 0;
-  V.hackOpen = d.id;
-  endTurn();
-}
 export function subdueStation(st, how) {
   st.state = 'subdued';
   st.alert = false;
@@ -635,7 +548,7 @@ export function subdueStation(st, how) {
   if (how === 'force') {
     let lost = 0;
     for (const o of own.filter(o => o.kind === 'der' && !['comms', 'life', 'workshop'].includes(o.pack.fn))) {
-      if (Math.random() < 0.35) {
+      if (random() < 0.35) {
         removeObj(o);
         lost++;
         G.ext.objs.push({
@@ -658,7 +571,7 @@ export function subdueStation(st, how) {
       `${st.name}: security core cracked. Its systems answer to KESTREL-9 now, and its sections arrive already claimed. They can be cut free and towed.`,
       'good',
     );
-    if (Math.random() < 0.3 + st.ice * 0.06) {
+    if (random() < 0.3 + st.ice * 0.06) {
       addRaft(
         st.sec,
         clamp(st.cx + rr(-6, 6), 3, WW - 4),
@@ -968,14 +881,14 @@ export function crewTick() {
       c.duty = online(m) || m.type === 'terminal';
       c.jobTxt = c.duty ? `on duty at the ${MD[m.type].n}` : `waiting: the ${MD[m.type].n} is not running`;
     } else c.jobTxt = `heading to the ${MD[m.type].n}`;
-    if (Math.random() < 1 / 500) log(`${c.name}: "${pick(CHAT[c.role])}"`, 'lore');
+    if (random() < 1 / 500) log(`${c.name}: "${pick(CHAT[c.role])}"`, 'lore');
   }
   if (hasCrew('medic')) {
     P.hp = Math.min(P.hpMax, P.hp + 0.08);
   }
 }
 function wander(c) {
-  if (Math.random() < 0.3) {
+  if (random() < 0.3) {
     const [dx, dy] = pick(D8);
     const nx = c.x + dx,
       ny = c.y + dy;
@@ -1001,7 +914,7 @@ export function allyTick() {
       if (G.turn % 12 === 0) G.stock.scrap--;
     }
   }
-  if (G.allies.length && Math.random() < 1 / 600) {
+  if (G.allies.length && random() < 1 / 600) {
     const a = pick(G.allies);
     log(
       `${a.n}: "${pick(['Grid stable. You are welcome.', 'I rerouted three relays while you slept. You do sleep, right?', 'There is something in the lower conduits that does not show up on my sensors. Probably fine.', 'I have named the drones. Please do not tell them.', 'Another station is pinging us. Old handshake. I did not answer.'])}"`,
@@ -1063,8 +976,8 @@ export const det = s => (s.known || s.id === G.home ? 2 : s.det || 0);
 export function contact(s) {
   if (det(s)) return false;
   s.det = 1;
-  const a = Math.random() * Math.PI * 2,
-    r = 1 + Math.random() * 2.2;
+  const a = random() * Math.PI * 2,
+    r = 1 + random() * 2.2;
   s.fz = [Math.cos(a) * r, Math.sin(a) * r];
   return true;
 }
@@ -1100,14 +1013,14 @@ export function sensorTick() {
       if (det(s)) continue;
       const d = sdist(s, h);
       const loud = ['rogueai', 'military', 'weapon'].includes(s.type) || s.comms;
-      if ((d <= R && loud && Math.random() < 0.3) || (d <= R * 0.5 && Math.random() < 0.15)) {
+      if ((d <= R && loud && random() < 0.3) || (d <= R * 0.5 && random() < 0.15)) {
         contact(s);
         log(`Passive sensors: new contact ${cid(s)}, ${SIGN[s.type][1]}.`, 'info');
       }
     }
   }
   for (const L of G.legacy)
-    if (L.aware && L.aware > G.turn && !L.tags.includes(TAGK) && Math.random() < 1 / 70) {
+    if (L.aware && L.aware > G.turn && !L.tags.includes(TAGK) && random() < 1 / 70) {
       const m = pick(G.mods.filter(m => m.ctl)) || G.mods[0];
       const mi = G.mods.indexOf(m);
       addBreachMod(mi);
@@ -1126,18 +1039,18 @@ export function sensorTick() {
     }
     f.w++;
     G.hot = (G.hot || 0) + 2;
-    if (s.type === 'weapon' && Math.random() < 0.04) {
+    if (s.type === 'weapon' && random() < 0.04) {
       const L = G.legacy.find(L => L.sec === s.id);
       if (L && !L.tags.includes(TAGK) && !(L.aware > G.turn)) {
         L.aware = G.turn + 300;
         log(`${cid(s)} is painting us back. Whatever it is, it has a lock now.`, 'bad');
       }
     }
-    if (s.type === 'rogueai' && Math.random() < 0.04 && !f.heard) {
+    if (s.type === 'rogueai' && random() < 0.04 && !f.heard) {
       f.heard = 1;
       hunted(s);
     }
-    if (s.type === 'military' && Math.random() < 0.03) {
+    if (s.type === 'military' && random() < 0.03) {
       const st = G.stations.find(st => st.sec === s.id);
       if (st && !st.alert) {
         st.alert = true;
@@ -1185,14 +1098,14 @@ export function activeSweep() {
     if (contact(s)) n++;
     if (s.type === 'weapon') {
       const L = G.legacy.find(L => L.sec === s.id);
-      if (L && !L.tags.includes(TAGK) && Math.random() < 0.5) {
+      if (L && !L.tags.includes(TAGK) && random() < 0.5) {
         L.aware = G.turn + 300;
         woke++;
       }
     }
-    if (s.type === 'rogueai' && Math.random() < 0.6) hunted(s);
+    if (s.type === 'rogueai' && random() < 0.6) hunted(s);
   }
-  V.sweep = { t0: performance.now(), R };
+  emit('sweep', { R });
   log(
     `ACTIVE SWEEP: ${n} new contact${n === 1 ? '' : 's'}. Everything in ${Math.round(R * 1400)} km just heard us.${woke ? ` ${woke} dormant platform${woke > 1 ? 's' : ''} lit up a targeting radar.` : ''}`,
     n ? 'good' : 'info',
@@ -1250,7 +1163,7 @@ export function arriveSector(d) {
   let x, y;
   if (to === HULL) {
     const b = stationBox();
-    const a = Math.random() * Math.PI * 2;
+    const a = random() * Math.PI * 2;
     const r = Math.max(b.x1 - b.x0, b.y1 - b.y0) / 2 + 10;
     const p = nearestVoid(
       clamp(Math.round(b.cx + Math.cos(a) * r), 2, WW - 3),
@@ -1261,7 +1174,7 @@ export function arriveSector(d) {
   } else if (to === G.home && from === HULL) {
     const [cx, cy] = LC();
     x = cx + rr(-3, 3);
-    y = cy + (Math.random() < 0.5 ? -4 : 4);
+    y = cy + (random() < 0.5 ? -4 : 4);
   } else {
     const side = rnd(4);
     if (side === 0) {

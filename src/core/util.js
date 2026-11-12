@@ -1,7 +1,7 @@
 import { WH, WW } from './constants.js';
+import { random } from './rng.js';
 
-export const $ = s => document.querySelector(s);
-export const rnd = n => Math.floor(Math.random() * n);
+export const rnd = n => Math.floor(random() * n);
 export const rr = (a, b) => a + rnd(b - a + 1);
 export const pick = a => a[rnd(a.length)];
 export const shuffle = a => {
@@ -39,7 +39,7 @@ export const pickW = (arr, wf) => {
   let s = 0;
   for (const a of arr) s += wf(a);
   if (s <= 0) return null;
-  let r = Math.random() * s;
+  let r = random() * s;
   for (const a of arr) {
     r -= wf(a);
     if (r <= 0) return a;

@@ -1,19 +1,19 @@
-import { CONN, connShape, derHit, hullNear, learnFrom, scrapValue } from '../actions/exterior.js';
-import { claimDone, lockdown, modBreaches } from '../actions/player.js';
 import { T, WH, WW } from '../core/constants.js';
-import { DT, FX, IT, TAGK, hasAI, hasCrew, mk, stById } from '../core/data.js';
+import { CONN, DT, FX, hasAI, hasCrew, IT, mk, stById, TAGK } from '../core/data.js';
+import { cmb, log } from '../core/messages.js';
+import { random } from '../core/rng.js';
 import { G, M, P, V } from '../core/state.js';
-import { D4, D8, cheb, clamp, idx, inB, pick, roll, rr } from '../core/util.js';
+import { cheb, clamp, D4, D8, idx, inB, pick, roll, rr } from '../core/util.js';
 import { releaseSat } from './earth-tick.js';
 import { addFx } from './stats.js';
-import { extFree, hatchOf, objById, removeObj, stationBox } from '../space/exterior-objects.js';
+import { derHit, extFree, hatchOf, objById, removeObj, stationBox } from '../space/exterior-objects.js';
 import {
-  HULL,
-  LC,
   addCrew,
   arriveSector,
   hackInit,
   hackTurn,
+  HULL,
+  LC,
   locked,
   relocateHome,
   sciReward,
@@ -22,17 +22,17 @@ import {
   subdueStation,
   updateSight,
 } from '../space/sectors.js';
-import { cmb, log } from '../ui/log-modal.js';
 import {
   addBreachMod,
   buildTube,
   canDetach,
   cutSpot,
+  dockPack,
   doCut,
   doSeal,
-  dockPack,
   fitsAt,
   freePorts,
+  hullNear,
   modById,
   modCells,
   modIndex,
@@ -42,8 +42,11 @@ import {
   removeBreach,
   setBrace,
 } from '../world/build.js';
+import { claimDone, lockdown, modBreaches } from '../world/control.js';
 import { addStock, dropNear, online } from '../world/machines.js';
 import { makePack } from '../world/packs.js';
+import { learnFrom, scrapValue } from '../world/salvage.js';
+import { connShape } from '../world/shapes.js';
 
 function extNext(sx, sy, goal, sec) {
   const home = sec == null || sec === HULL;
@@ -158,7 +161,7 @@ export function killDrone(d, by) {
     if (o) o.tow = null;
   }
   if (d.task.type === 'deploy') log(`The ${d.task.sat} satellite it carried is lost.`, 'bad');
-  if (Math.random() < 0.5 && d.sec >= 0)
+  if (random() < 0.5 && d.sec >= 0)
     G.ext.objs.push({ id: G.nid++, sec: d.sec, kind: 'wreck', x: d.x, y: d.y, dt: d.dt });
   G.ext.drones = G.ext.drones.filter(x => x !== d);
   if (G.sel === d.id) G.sel = G.ext.drones[0] ? G.ext.drones[0].id : null;
@@ -238,7 +241,7 @@ function droneAct(d) {
         log(`${st.name} goes to alert. Every turret is awake now.`, 'bad');
       }
     }
-    if (Math.random() < 0.7) {
+    if (random() < 0.7) {
       adjR.hp -= roll(D.dmg) + (hasAI('warden') ? 3 : 0) + (hasCrew('gunner') ? 2 : 0);
       if (adjR.kind === 'core' && adjR.hp <= 0) {
         addFx({ k: 'boom', x: adjR.x, y: adjR.y, dur: 500, view: 'ext', sec: d.sec });
@@ -252,7 +255,7 @@ function droneAct(d) {
         if (adjR.kind === 'turret' && !G.ext.objs.some(o => o.kind === 'turret' && o.grp === adjR.grp))
           log('All defenses in this group are down. The sections can be cut free.', 'good');
         addFx({ k: 'boom', x: adjR.x, y: adjR.y, dur: 400, view: 'ext' });
-        if (Math.random() < 0.3)
+        if (random() < 0.3)
           G.ext.objs.push({
             id: G.nid++,
             sec: d.sec,
@@ -350,7 +353,7 @@ function droneAct(d) {
           d.task = { type: 'idle' };
           break;
         }
-        if (t.mode === 'claim' && m.haywire && !node.lock && Math.random() < 0.05) {
+        if (t.mode === 'claim' && m.haywire && !node.lock && random() < 0.05) {
           node.lock = 1;
           lockdown(m);
         }
@@ -813,7 +816,7 @@ function swarmAct(r) {
     .sort((a, b) => cheb(a.x, a.y, r.x, r.y) - cheb(b.x, b.y, r.x, r.y))[0];
   if (dr) {
     if (cheb(dr.x, dr.y, r.x, r.y) <= 1) {
-      if (Math.random() < 0.5) {
+      if (random() < 0.5) {
         dr.hp -= rr(2, 4);
         if (dr.hp <= 0) killDrone(dr, 'a reclaimer swarm');
       }
@@ -821,12 +824,12 @@ function swarmAct(r) {
     return;
   }
   const db = G.ext.objs.find(o => o.kind === 'debris' && o.sec === r.sec && cheb(o.x, o.y, r.x, r.y) <= 1);
-  if (db && Math.random() < 0.2) {
+  if (db && random() < 0.2) {
     const k = pick(['scrap', 'circ']);
     if (db.res[k] > 0) db.res[k]--;
     return;
   }
-  if (Math.random() < 0.5) {
+  if (random() < 0.5) {
     const [dx, dy] = pick(D8);
     const nx = clamp(r.x + dx, 2, WW - 3),
       ny = clamp(r.y + dy, 2, WH - 3);
@@ -847,7 +850,7 @@ function rogueAct(r) {
     const dr0 = G.ext.drones.filter(d => d.sec === r.sec && !d.tr && cheb(d.x, d.y, r.x, r.y) <= 5)[0];
     if (dr0) {
       if (cheb(dr0.x, dr0.y, r.x, r.y) <= 1) {
-        if (Math.random() < 0.6) {
+        if (random() < 0.6) {
           dr0.hp -= r.tag === 'hunter' ? rr(5, 9) : rr(3, 7);
           addFx({
             k: 'tr',
@@ -868,7 +871,7 @@ function rogueAct(r) {
     if (cheb(r.x, r.y, cx, cy) <= 3) {
       r.sec = HULL;
       const b = stationBox();
-      const a = Math.random() * Math.PI * 2;
+      const a = random() * Math.PI * 2;
       const p = nearestVoid(
         clamp(Math.round(b.cx + Math.cos(a) * (Math.max(b.x1 - b.x0, b.y1 - b.y0) / 2 + 8)), 2, WW - 3),
         clamp(Math.round(b.cy + Math.sin(a) * (Math.max(b.x1 - b.x0, b.y1 - b.y0) / 2 + 8)), 2, WH - 3),
@@ -883,7 +886,7 @@ function rogueAct(r) {
     moveTo(r, adjTo(cx, cy), 1);
     return;
   }
-  if (r.tag === 'hunter' && G.silent && Math.random() < 0.05) {
+  if (r.tag === 'hunter' && G.silent && random() < 0.05) {
     removeObj(r);
     log('A hunter loses your trail in the silence and drifts off.', 'info');
     return;
@@ -898,7 +901,7 @@ function rogueAct(r) {
     .sort((a, b) => cheb(a.x, a.y, r.x, r.y) - cheb(b.x, b.y, r.x, r.y))[0];
   if (dr) {
     if (cheb(dr.x, dr.y, r.x, r.y) <= 1) {
-      if (Math.random() < 0.6) {
+      if (random() < 0.6) {
         dr.hp -= r.tag === 'hunter' ? rr(5, 9) : rr(3, 7);
         addFx({ k: 'tr', x0: r.x, y0: r.y, x1: dr.x, y1: dr.y, c: '#ff5a5a', dur: 180, view: 'ext' });
         if (dr.hp <= 0) killDrone(dr, 'a rogue drone');
@@ -911,7 +914,7 @@ function rogueAct(r) {
   const mi = modIndex(m.id);
   const near = (x, y) => modCells(m).some(c => cheb(c.x, c.y, x, y) <= 1);
   if (near(r.x, r.y)) {
-    if (Math.random() < 0.08 && m.breaches.length < 2) {
+    if (random() < 0.08 && m.breaches.length < 2) {
       if (addBreachMod(mi)) {
         log(`A rogue drone cuts into the ${m.name} hull! Breach.`, 'bad');
         addFx({ k: 'boom', x: r.x, y: r.y, dur: 400, view: 'ext' });
@@ -940,9 +943,9 @@ function turretTick() {
       }
       return;
     }
-    if (Math.random() > 0.65) continue;
+    if (random() > 0.65) continue;
     G.stock.ammo--;
-    const hit = Math.random() < (hasCrew('gunner') ? 0.85 : 0.7);
+    const hit = random() < (hasCrew('gunner') ? 0.85 : 0.7);
     addFx({
       k: 'tr',
       x0: out[0],
@@ -977,7 +980,7 @@ export function extTick() {
     const t = G.ext.objs.filter(
       o => o.kind === 'rogue' && o.sec === HULL && cheb(o.x, o.y, pd.x, pd.y) <= 18,
     )[0];
-    if (t && Math.random() < 0.5) {
+    if (t && random() < 0.5) {
       t.hp -= rr(8, 14) + (hasAI('warden') ? 4 : 0);
       addFx({ k: 'tr', x0: pd.x, y0: pd.y, x1: t.x, y1: t.y, c: '#ff5050', dur: 200, view: 'ext' });
       cmb('Point defense fires.', 'good');
@@ -1006,7 +1009,7 @@ export function extTick() {
     const tgt = G.ext.drones
       .filter(d => d.sec === o.sec && !d.tr && cheb(d.x, d.y, o.x, o.y) <= range)
       .sort((a, b) => cheb(a.x, a.y, o.x, o.y) - cheb(b.x, b.y, o.x, o.y))[0];
-    if (tgt && Math.random() < (o.kind === 'platform' ? 0.7 : 0.45)) {
+    if (tgt && random() < (o.kind === 'platform' ? 0.7 : 0.45)) {
       const dm = o.kind === 'platform' ? rr(8, 14) : rr(3, 6);
       tgt.hp -= dm;
       addFx({

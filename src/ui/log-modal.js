@@ -1,26 +1,28 @@
-import { machineStatus } from '../actions/player.js';
 import { BR, MD } from '../core/data.js';
 import { G, V } from '../core/state.js';
-import { $, esc, pad5 } from '../core/util.js';
+import { esc, pad5 } from '../core/util.js';
 import { stopTravel } from '../main.js';
 import { refresh } from '../sim/turn.js';
+import { $ } from './dom.js';
+import { machineStatus } from '../world/machines.js';
 
-export function log(m, c) {
-  G.log.push({ n: G.turn, m, c: c || '' });
-  if (G.log.length > 150) G.log.shift();
-  if (c === 'bad' || c === 'warn') G.intr = true;
-}
-export function cmb(m, c) {
-  G.cmb.push({ n: G.turn, m, c: c || '' });
-  if (G.cmb.length > 100) G.cmb.shift();
-}
-export let modalOpen = false,
-  modalBtns = [];
+/** @typedef {import('../core/types.js').ModalButton} ModalButton */
+
+/** @type {ModalButton[]} */
+export let modalBtns = [];
 export let modalKeys = [];
 const isClose = b => b.k === 'close' || (!b.f && ['Close', 'Cancel', 'OK'].includes(b.t) && b.k !== 'key');
+/**
+ * @param {string} title
+ * @param {string} body
+ * @param {ModalButton[]} btns
+ * @param {boolean} [locked] Clicking outside does not close it.
+ * @param {boolean} [html] Body is HTML, not text.
+ * @param {string} [plate] HTML of a machine plate shown above the body.
+ */
 export function showModal(title, body, btns, locked, html, plate) {
   stopTravel();
-  modalOpen = true;
+  V.modalOpen = true;
   modalBtns = btns;
   $('#mT').textContent = title;
   const mb = $('#mB');
@@ -133,16 +135,13 @@ export function pickModal(i) {
   if (b.f) b.f();
 }
 export function closeModal() {
-  modalOpen = false;
+  V.modalOpen = false;
   $('#modal').classList.add('hidden');
   refresh();
   flushModals();
 }
-export function queueModal(t, b, btns) {
-  V.modalQ.push([t, b, btns]);
-}
 export function flushModals() {
-  if (!modalOpen && V.modalQ.length) {
+  if (!V.modalOpen && V.modalQ.length) {
     const [t, b, btns] = V.modalQ.shift();
     showModal(t, b, btns || [{ t: 'OK' }]);
   }

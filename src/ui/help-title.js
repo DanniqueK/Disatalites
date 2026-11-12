@@ -1,9 +1,10 @@
 import { OBJ } from '../core/data.js';
-import { hasSave, loadSave } from '../core/save.js';
-import { V } from '../core/state.js';
+import { log } from '../core/messages.js';
+import { hasSave, loadSave, setAutosave } from '../core/save.js';
+import { G, V } from '../core/state.js';
 import { refresh } from '../sim/turn.js';
 import { HULL } from '../space/sectors.js';
-import { log, modalBtns, showModal } from './log-modal.js';
+import { modalBtns, showModal } from './log-modal.js';
 import { newGame } from '../world/new-game.js';
 
 export function showHelp() {
@@ -48,7 +49,7 @@ EARTH view (politics):
  Legacy satellites shoot settlements and satellites of anyone not in their IFF tables. Spoofing tags is your strongest lever.
 
 Events are paced by a storyteller: quiet stretches, then trouble, then time to recover. It goes easier on you when you are struggling.
-Keys: Z/X/O/C views, T tags, L log, . or SPACE wait, ? help. Autosaves in this browser.`,
+Keys: Z/X/O/C views, T tags, L log, . or SPACE wait, ? help. Autosaves in this browser.${G && G.seed != null ? `\n\nRun seed: ${G.seed} (mention it when reporting a bug)` : ''}`,
     [{ t: 'Close' }],
   );
 }
@@ -58,10 +59,18 @@ export function showTitle() {
     btns.push({
       t: 'Continue saved station',
       f: () => {
-        if (loadSave()) {
+        const res = loadSave();
+        if (res.ok) {
           log('Session restored.', 'info');
           refresh();
-        } else startNew('clone');
+          return;
+        }
+        showModal(
+          'SAVE NOT LOADED',
+          `The saved station could not be loaded: ${res.reason}.\n\nThe save is left as it is until a new game autosaves over it.`,
+          [{ t: 'Back to title', f: showTitle }],
+          true,
+        );
       },
     });
   btns.push({
@@ -93,6 +102,7 @@ function startNew(s) {
   V.ez = 1;
   V.fx = [];
   newGame(s);
+  setAutosave(true);
   V.sec = HULL;
   refresh();
   showModal(

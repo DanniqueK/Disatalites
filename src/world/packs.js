@@ -1,5 +1,6 @@
-import { BR, BRANDS, EN, FN, FX, XTRA, mk } from '../core/data.js';
-import { D4, D8, cheb, pick, rnd, rr, shuffle } from '../core/util.js';
+import { BR, BRANDS, EN, FN, FX, mk, XTRA } from '../core/data.js';
+import { random } from '../core/rng.js';
+import { cheb, D4, D8, pick, rnd, rr, shuffle } from '../core/util.js';
 import { cloneShape, genShape, setCell, shapeFloors } from './shapes.js';
 
 function shapeFloodOk(sh, blocked) {
@@ -62,8 +63,8 @@ export function makePack(fn, brand, opts) {
   if (fill === 'set') want = smalls.slice();
   else if (fill !== 'shell') {
     const P1 = fill === 'station' ? 0.8 : 0.55;
-    for (const t of smalls) if (Math.random() < P1) want.push(t);
-    if (fn !== 'tube' && Math.random() < (fill === 'station' ? 0.45 : 0.3))
+    for (const t of smalls) if (random() < P1) want.push(t);
+    if (fn !== 'tube' && random() < (fill === 'station' ? 0.45 : 0.3))
       want.push(pick(XTRA[opts.kind] || XTRA.any));
   }
   const nMount = fn === 'tube' ? 0 : want.length + rr(1, 2);
@@ -71,7 +72,7 @@ export function makePack(fn, brand, opts) {
     if (opts.cond) return opts.cond(t);
     if (fill === 'shell') return FX[t] ? rr(25, 40) : 100;
     const wk = fill === 'station' ? 0.5 : 0.25;
-    return Math.random() < wk ? rr(62, 92) : rr(10, 55);
+    return random() < wk ? rr(62, 92) : rr(10, 55);
   };
   // big fixtures first
   {
@@ -119,7 +120,7 @@ export function makePack(fn, brand, opts) {
               const fl = shapeFloodOk(sh, blocked);
               for (const [cx, cy] of cells) blocked.delete(cx + ',' + cy);
               if (!fl) continue;
-              let sc = Math.random();
+              let sc = random();
               if (F.p === 'c') {
                 for (let j = -1; j <= fh; j++)
                   for (let i = -1; i <= fw; i++) {
@@ -178,7 +179,7 @@ export function makePack(fn, brand, opts) {
             ].filter(([a, b]) => g(x + a, y + b) === '#').length;
             const pd = Math.min(99, ...sh.ports.map(p => cheb(p.x, p.y, x, y)));
             const sc = score(pd, side);
-            if (sc != null) o.push({ x, y, fx, fy, sc: sc + Math.random() });
+            if (sc != null) o.push({ x, y, fx, fy, sc: sc + random() });
           }
         }
       o.sort((a, b) => b.sc - a.sc);
@@ -269,10 +270,10 @@ export function makePack(fn, brand, opts) {
         fn === 'defense'
           ? rr(2, 3)
           : opts.kind === 'military' || opts.kind === 'rogue'
-            ? Math.random() < 0.6
+            ? random() < 0.6
               ? 1
               : 0
-            : Math.random() < 0.35
+            : random() < 0.35
               ? 1
               : 0;
       for (const [x, y] of hc) {
@@ -283,9 +284,9 @@ export function makePack(fn, brand, opts) {
         const arm =
           fill !== 'shell' &&
           (fn === 'defense'
-            ? Math.random() < 0.8
+            ? random() < 0.8
             : opts.kind === 'military' || opts.kind === 'rogue'
-              ? Math.random() < 0.6
+              ? random() < 0.6
               : false);
         pack.mach.push({
           type: arm ? 'turret' : 'hp',
@@ -338,12 +339,12 @@ export function fillDerelict(pack, first) {
         c: {
           scrap: rr(3, 9),
           circ: rr(1, 4),
-          rat: Math.random() < 0.4 ? rr(1, 3) : 0,
-          ammo: Math.random() < 0.3 ? rr(5, 12) : 0,
+          rat: random() < 0.4 ? rr(1, 3) : 0,
+          ammo: random() < 0.3 ? rr(5, 12) : 0,
         },
       });
   }
-  if (Math.random() < 0.55) {
+  if (random() < 0.55) {
     const f = packFree(pack)[0];
     if (f)
       pack.items.push({
@@ -351,11 +352,11 @@ export function fillDerelict(pack, first) {
         ly: f[1],
         it: mk(
           pick(['scatter', 'cutter', 'liner', 'scanner', 'magboots', 'armor', 'o2tank', 'medkit', 'carbine']),
-          0.4 + Math.random() * 0.5,
+          0.4 + random() * 0.5,
         ),
       });
   }
-  if (Math.random() < 0.18) {
+  if (random() < 0.18) {
     const f = packFree(pack)[0];
     if (f)
       pack.items.push({
@@ -368,7 +369,7 @@ export function fillDerelict(pack, first) {
   for (let k = 0; k < nh; k++) {
     const f = packFree(pack).find(([x, y]) => pack.shape.ports.every(p => cheb(p.x, p.y, x, y) > 3));
     if (f) {
-      const t = Math.random() < 0.35 ? 'crawler' : 'feral';
+      const t = random() < 0.35 ? 'crawler' : 'feral';
       pack.actors.push({ type: t, lx: f[0], ly: f[1], hp: EN[t].hp });
     }
   }

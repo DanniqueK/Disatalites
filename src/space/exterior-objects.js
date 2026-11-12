@@ -1,5 +1,6 @@
 import { T, WH, WW } from '../core/constants.js';
 import { DT } from '../core/data.js';
+import { random } from '../core/rng.js';
 import { G, M } from '../core/state.js';
 import { cheb, idx, inB, pickW, rnd, rr } from '../core/util.js';
 import { HULL, LC } from './sectors.js';
@@ -46,7 +47,7 @@ export function addDebris(near) {
     kind: 'debris',
     x,
     y,
-    res: { scrap: rr(5, 12), circ: rr(1, 5), rat: Math.random() < 0.25 ? rr(1, 3) : 0 },
+    res: { scrap: rr(5, 12), circ: rr(1, 5), rat: random() < 0.25 ? rr(1, 3) : 0 },
   });
 }
 export function addWreck(dt) {
@@ -134,4 +135,11 @@ export function hatchOf(d) {
     if (r) d.home = r.id;
   }
   return r ? r.hatch : null;
+}
+
+export function derHit(o, x, y) {
+  const sh = o.pack.shape;
+  const ox = o.x - Math.floor(sh.w / 2),
+    oy = o.y - Math.floor(sh.h / 2);
+  return x >= ox && y >= oy && x < ox + sh.w && y < oy + sh.h;
 }

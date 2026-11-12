@@ -4,6 +4,7 @@ export let G = null,
   P = null;
 export const M = { map: null, own: null, vis: new Uint8Array(WW * WH), dmap: null, land: null, stars: null };
 export const V = {
+  modalOpen: false,
   tab: 'station',
   tags: true,
   hover: null,

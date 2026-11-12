@@ -1,12 +1,14 @@
 import { EGW } from '../core/constants.js';
-import { FAC, TAGK, isRival } from '../core/data.js';
-import { G, V } from '../core/state.js';
+import { FAC, isRival, TAGK } from '../core/data.js';
+import { emit } from '../core/events.js';
+import { log } from '../core/messages.js';
+import { G } from '../core/state.js';
 import { shuffle } from '../core/util.js';
 import { changeRep, completeReq } from '../sim/earth-tick.js';
 import { endTurn, refresh } from '../sim/turn.js';
 import { isHome, nbrs, ownedCells } from '../space/earth.js';
 import { tagName } from '../space/sectors.js';
-import { log, showModal } from '../ui/log-modal.js';
+import { showModal } from '../ui/log-modal.js';
 import { commsOnline, hasOnline } from '../world/machines.js';
 
 /** @typedef {import('../core/types.js').ModalButton} ModalButton */
@@ -93,7 +95,7 @@ export function strikeMenu(fi) {
           for (const i of shuffle(own).slice(0, 3)) {
             G.owner[i] = -1;
             hit++;
-            V.strikes.push({ x: i % EGW, y: (i / EGW) | 0, t0: performance.now() });
+            emit('strike', { x: i % EGW, y: (i / EGW) | 0 });
           }
           changeRep(fi, -35);
           G.fac[fi].boost = Math.max(0, G.fac[fi].boost - 5);

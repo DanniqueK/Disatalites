@@ -15,3 +15,5 @@ export const WW = 144,
 export const T = { VOID: 0, FLOOR: 1, WALL: 2, DOOR: 3, PORT: 4, BREACH: 5, WINDOW: 6, MACH: 7 };
 export const WALK = new Set([T.FLOOR, T.DOOR]);
 export const OPQ = new Set([T.WALL, T.PORT]);
+/** Version of the saved game format (`G.v`). Bump it and add a migration in core/save.js when the format changes. */
+export const SAVE_VERSION = 10;

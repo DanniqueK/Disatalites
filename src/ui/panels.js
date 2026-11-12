@@ -1,29 +1,23 @@
 import { cmdDrone, cycleDrone, selDrone, taskText } from '../actions/exterior.js';
-import {
-  cycleTarget,
-  deployFlow,
-  eat,
-  fire,
-  machineStatus,
-  pickup,
-  playerMove,
-  toggleSilent,
-} from '../actions/player.js';
+import { hackConsole } from '../actions/hack.js';
+import { cycleTarget, deployFlow, eat, fire, pickup, playerMove, toggleSilent } from '../actions/player.js';
 import { BR, DT, FAC, IT, MD, OBJ, PERK, RC, ROLE, SATS, SEC_T, TAGK } from '../core/data.js';
+import { log } from '../core/messages.js';
 import { G, P, V } from '../core/state.js';
-import { $, clamp, esc, pad5 } from '../core/util.js';
+import { clamp, esc, pad5 } from '../core/util.js';
 import { zoomAt } from '../main.js';
 import { atHatch } from '../sim/exterior-tick.js';
 import { stats } from '../sim/stats.js';
 import { refresh, waitN } from '../sim/turn.js';
 import { power, shares } from '../space/earth.js';
-import { HULL, SEC, activeSweep, hackConsole, locked, secName, tagName } from '../space/sectors.js';
+import { activeSweep, HULL, locked, SEC, secName, tagName } from '../space/sectors.js';
+import { $ } from './dom.js';
 import { showHelp } from './help-title.js';
-import { log, showLog } from './log-modal.js';
+import { showLog } from './log-modal.js';
 import { cycTags, focusOrbit, render, uiOrbit } from './render.js';
 import { freePorts } from '../world/build.js';
 import { modAtP, pressureAt } from '../world/fov.js';
-import { caps, commsOnline, droneCap, hasOnline } from '../world/machines.js';
+import { caps, commsOnline, droneCap, hasOnline, machineStatus } from '../world/machines.js';
 
 function bar(label, v, m, col) {
   return `<div class="bar"><div class="f" style="width:${clamp(v / m, 0, 1) * 100}%;background:${col}"></div><div class="l2">${label}</div></div>`;

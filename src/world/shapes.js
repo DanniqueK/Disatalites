@@ -1,3 +1,5 @@
+import { CONN } from '../core/data.js';
+import { random } from '../core/rng.js';
 import { D4, D8, rr, shuffle } from '../core/util.js';
 
 export function genShape(kind) {
@@ -34,7 +36,7 @@ export function genShape(kind) {
         const a = rr(1, 3);
         rect(3 + a, 3, 3, 3 + 2 * a);
         rect(3, 3 + a, 3 + 2 * a, 3);
-        if (Math.random() < 0.4) rect(3 + a - 1, 3 + a - 1, 5, 5);
+        if (random() < 0.4) rect(3 + a - 1, 3 + a - 1, 5, 5);
         break;
       }
       case 'oct': {
@@ -261,4 +263,40 @@ export function shapeFloors(sh) {
   const o = [];
   for (let y = 0; y < sh.h; y++) for (let x = 0; x < sh.w; x++) if (sh.g[y][x] === '.') o.push([x, y]);
   return o;
+}
+
+export function connShape(k) {
+  const C = CONN[k];
+  const xs = C.f.concat(C.p).map(c => c[0]),
+    ys = C.f.concat(C.p).map(c => c[1]);
+  const ox = Math.min(...xs) - 1,
+    oy = Math.min(...ys) - 1,
+    w = Math.max(...xs) - ox + 2,
+    h = Math.max(...ys) - oy + 2;
+  const g = [];
+  for (let y = 0; y < h; y++) g.push(new Array(w).fill(' '));
+  for (const [x, y] of C.f) g[y - oy][x - ox] = '.';
+  for (const [x, y] of C.p) g[y - oy][x - ox] = 'P';
+  for (const [x, y] of C.f)
+    for (const [dx, dy] of D8) {
+      const a = x - ox + dx,
+        b = y - oy + dy;
+      if (g[b] && g[b][a] === ' ') g[b][a] = '#';
+    }
+  for (const [x, y, dx, dy] of C.p)
+    for (const [px, py] of [
+      [dy, dx],
+      [-dy, -dx],
+    ]) {
+      const a = x - ox + px,
+        b = y - oy + py;
+      if (g[b] && g[b][a] === ' ') g[b][a] = '#';
+    }
+  return {
+    kind: 'conn',
+    w,
+    h,
+    g: g.map(r => r.join('')),
+    ports: C.p.map(([x, y, dx, dy]) => ({ x: x - ox, y: y - oy, dx, dy })),
+  };
 }
