@@ -758,8 +758,6 @@ function engTarget(c) {
   const ms = G.machines
     .filter(
       m =>
-        m.type !== 'mount' &&
-        m.type !== 'hp' &&
         m.cond < 100 &&
         G.mods[m.mi] &&
         (G.mods[m.mi].ctl || m.type === 'node' || m.type === 'junc') &&

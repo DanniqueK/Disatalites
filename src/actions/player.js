@@ -1,10 +1,10 @@
 import { releaseTow } from './exterior.js';
 import { T, WALK } from '../core/constants.js';
-import { BR, CHAT, DT, EN, FAC, IT, LORE, MC, MD, RC, SATS, SMALL } from '../core/data.js';
+import { BR, CHAT, DT, EN, FAC, FN, GEAR_ROOMS, IT, LORE, MC, MD, RC, SATS, SMALL } from '../core/data.js';
 import { cmb, log } from '../core/messages.js';
 import { random } from '../core/rng.js';
 import { G, M, P, V } from '../core/state.js';
-import { cheb, clamp, idx, inB, pick, roll, rr } from '../core/util.js';
+import { an, cheb, clamp, D8, idx, inB, pick, roll, rr } from '../core/util.js';
 import { releaseSat } from '../sim/earth-tick.js';
 import { actorAt, addFx, damageActor, stats } from '../sim/stats.js';
 import { canAct, endTurn, onGrid, refresh } from '../sim/turn.js';
@@ -13,10 +13,11 @@ import { spawnDrone } from '../space/exterior-objects.js';
 import { machAt } from '../space/sectors.js';
 import { machinePlate, showModal } from '../ui/log-modal.js';
 import { setTab } from '../ui/panels.js';
-import { rebuildMap, removeBreach } from '../world/build.js';
+import { removeBreach } from '../world/build.js';
 import { claimDone, lockdown, modBreaches } from '../world/control.js';
 import { los } from '../world/fov.js';
 import { addStock, ctlOK, droneCap, dropItem, dropNear, machineStatus, online } from '../world/machines.js';
+import { placeGear, placeProblem, removeMachine } from '../world/placement.js';
 
 /** @typedef {import('../core/types.js').ModalButton} ModalButton */
 
@@ -257,6 +258,7 @@ export function itemMenu(i) {
     });
   else if (d.s !== 'drone' && d.s !== 'kit') b.push({ t: 'Equip', f: () => equipItem(i) });
   if (d.s === 'kit') {
+    b.push({ t: 'Install next to you...', f: () => installMenu(i) });
     const v = stripValue(d.mt, it.cond || 100);
     b.push({
       t: `Scrap the kit (+${v.s} scrap${v.c ? ', +' + v.c + ' circ' : ''})`,
@@ -341,7 +343,7 @@ function itemDesc(it) {
   const d = IT[it.key],
     L = [];
   if (d.s === 'kit')
-    return `${MD[d.mt].desc}\n\nCondition: ${Math.round(it.cond || 100)}%.\nClick an empty mount (·) in a section you control to install it (3 turns).`;
+    return `${MD[d.mt].desc}\n\nCondition: ${Math.round(it.cond || 100)}%.\nStand next to a free spot in a room you control and use Install (3 turns).`;
   if (d.s === 'drone')
     return `A powered-down ${DT[d.dt].n} drone (${DT[d.dt].desc}).\nCarry it to a working Drone Rack and click the rack to activate it (2 scrap, 1 circuit).`;
   L.push('Slot: ' + { tool: 'TOOL', weap: 'WEAPON', suit: 'SUIT', use: 'CONSUMABLE' }[d.s]);
@@ -404,6 +406,55 @@ function activateDrone(rack, i) {
   log(`${DT[dt].n} drone wakes up and slips out through the hatch. EXTERIOR view unlocked.`, 'good');
   endTurn();
 }
+const cap = s => s[0].toUpperCase() + s.slice(1);
+const DIR8 = {
+  '-1,-1': 'north-west',
+  '0,-1': 'north',
+  '1,-1': 'north-east',
+  '-1,0': 'west',
+  '1,0': 'east',
+  '-1,1': 'south-west',
+  '0,1': 'south',
+  '1,1': 'south-east',
+};
+/** Offer every tile around the player where the kit in inventory slot `i` can be installed. */
+function installMenu(i) {
+  const it = P.inv[i];
+  if (!it) return;
+  const t = IT[it.key].mt;
+  const spots = [],
+    why = new Set();
+  for (const [dx, dy] of D8) {
+    const problem = placeProblem(t, P.x + dx, P.y + dy);
+    if (problem) why.add(problem);
+    else spots.push([dx, dy]);
+  }
+  const b = spots.map(
+    /** @returns {ModalButton} */ ([dx, dy]) => ({
+      t: `Install to the ${DIR8[dx + ',' + dy]} (3 turns)`,
+      f: () => {
+        P.inv.splice(i, 1);
+        for (let k = 0; k < 2 && canAct(); k++) endTurn(true);
+        const m = placeGear(t, P.x + dx, P.y + dy, it.cond || 100);
+        log(
+          `${MD[t].n} installed in the ${G.mods[m.mi].name}.${MD[t].use ? ' It needs power from the bus.' : ''}`,
+          'good',
+        );
+        endTurn();
+      },
+    }),
+  );
+  b.push({ t: 'Cancel' });
+  const where =
+    GEAR_ROOMS[t] === '*' ? 'any room you control' : `a ${GEAR_ROOMS[t].map(f => FN[f].n).join(', ')}`;
+  showModal(
+    `INSTALL ${MD[t].n.toUpperCase()}`,
+    spots.length
+      ? `Pick a spot next to you. ${cap(an(MD[t].n))} ${MD[t].n} belongs in ${where}${t === 'turret' ? ', on an outer wall' : ''}.`
+      : `There is no spot next to you for it: ${[...why].join('; ')}.\n\n${cap(an(MD[t].n))} ${MD[t].n} belongs in ${where}${t === 'turret' ? ', on an outer wall' : ''}. Doorways and the walkway through the room stay clear.`,
+    b,
+  );
+}
 function giveItem(it) {
   if (P.inv.length < 8) P.inv.push(it);
   else {
@@ -419,14 +470,9 @@ function uninstall(m) {
   for (let k = 0; k < 2 && canAct(); k++) endTurn(true);
   const it = { key: 'k_' + m.type, cond: Math.round(m.cond) };
   const nm = MD[m.type].n;
-  m.type = m.type === 'turret' ? 'hp' : 'mount';
-  m.cond = 100;
-  m.on = true;
-  m.powered = false;
-  m.busy = false;
-  m.prog = 0;
+  removeMachine(m);
   giveItem(it);
-  log(`${nm} unbolted and packed into a kit. The mount is free.`, 'good');
+  log(`${nm} unbolted and packed into a kit. Install it anywhere it belongs.`, 'good');
   endTurn();
 }
 function stripValue(t, cond) {
@@ -434,7 +480,7 @@ function stripValue(t, cond) {
   const q = 0.5 + Math.min(100, cond) / 200;
   return { s: Math.max(2, Math.round(base[0] * 0.4 * q)), c: Math.round(base[1] * 0.3 * q) };
 }
-const NOSTRIP = ['node', 'junc', 'mount', 'hp'];
+const NOSTRIP = ['node', 'junc'];
 /** @returns {ModalButton[]} */
 function stripOpt(m, locked) {
   if (NOSTRIP.includes(m.type) || m.type === 'terminal') return [];
@@ -470,72 +516,22 @@ function stripOpt(m, locked) {
           t = m.type;
         if (G.fab && G.fab.mid === m.id) G.fab = null;
         for (let k = 0; k < (locked ? 4 : 2) && canAct(); k++) endTurn(true);
-        m.type = t === 'turret' ? 'hp' : 'mount';
-        m.cond = 100;
-        m.on = true;
-        m.powered = false;
-        m.busy = false;
-        m.prog = 0;
+        removeMachine(m);
         addStock('scrap', v.s);
         addStock('circ', v.c);
         if (SMALL.includes(t) && !G.bp['k_' + t]) {
           G.bp['k_' + t] = 1;
           log(`SCHEMATIC learned from taking it apart: ${nm}.`, 'good');
         }
-        log(
-          `You strip the ${nm} down to the frame: +${v.s} scrap${v.c ? ', +' + v.c + ' circuits' : ''}.`,
-          'good',
-        );
+        log(`You strip the ${nm} for parts: +${v.s} scrap${v.c ? ', +' + v.c + ' circuits' : ''}.`, 'good');
         endTurn();
       },
     },
   ];
 }
-function mountMenu(m) {
-  const mod = G.mods[m.mi];
-  if (!mod.ctl) {
-    showModal(
-      'EMPTY MOUNT',
-      "The mount's bolts are locked by this section's grid. Claim the section first.",
-      [{ t: 'Close' }],
-    );
-    return;
-  }
-  const hp = m.type === 'hp';
-  const kits = P.inv
-    .map((it, i) => ({ it, i }))
-    .filter(o => IT[o.it.key].s === 'kit' && (IT[o.it.key].mt === 'turret') === hp);
-  const b = kits.map(({ it, i }) => ({
-    t: `Install ${IT[it.key].n} (${Math.round(it.cond || 100)}%, 3 turns)`,
-    f: () => {
-      const t = IT[it.key].mt;
-      P.inv.splice(i, 1);
-      for (let k = 0; k < 2 && canAct(); k++) endTurn(true);
-      m.type = t;
-      m.cond = it.cond || 100;
-      m.on = true;
-      m.prog = 0;
-      log(
-        `${MD[t].n} installed in the ${mod.name}.${MD[t].use ? ' It needs power from the bus.' : ''}`,
-        'good',
-      );
-      rebuildMap();
-      endTurn();
-    },
-  }));
-  b.push({ t: 'Close' });
-  showModal(
-    hp ? 'HARDPOINT' : 'EMPTY MOUNT',
-    hp
-      ? `A weapon hardpoint in the ${mod.name} hull. It takes a Hull Turret kit.\n${kits.length ? '' : 'You are not carrying a turret kit. Scrap a section with a turret to learn the schematic, or move one from another hardpoint.'}`
-      : `An empty equipment pad in the ${mod.name}.\n${kits.length ? 'Pick a kit to install:' : 'You are not carrying any machine kits. Uninstall a machine somewhere, or build a kit at the Fabricator from a schematic.'}`,
-    b,
-  );
-}
 export function machineMenu(m) {
   const mod = G.mods[m.mi];
   if (m.type === 'node') return nodeMenu(m);
-  if (m.type === 'mount' || m.type === 'hp') return mountMenu(m);
   if (!ctlOK(m)) {
     showModal(
       'ACCESS DENIED',

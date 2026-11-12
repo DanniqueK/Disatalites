@@ -167,12 +167,6 @@ export const MD = {
     c: '#e8e040',
     desc: "The section's local control computer, running its maker's firmware. Until you claim it, nothing in this section answers to you: no power, no air, no machines.",
   },
-  hp: {
-    n: 'Hardpoint',
-    g: '^',
-    c: '#a08070',
-    desc: 'A reinforced weapon mount wired into the outer hull. Install a Hull Turret kit here.',
-  },
   turret: {
     n: 'Hull Turret',
     g: 'T',
@@ -180,13 +174,7 @@ export const MD = {
     use: 2,
     pri: 3,
     tech: 1,
-    desc: 'Auto-cannon on a hardpoint. Shoots hostile drones near the hull. Needs power from the bus and takes 1 ammo per shot from storage. A gunner on the crew makes it hit harder.',
-  },
-  mount: {
-    n: 'Empty Mount',
-    g: '·',
-    c: '#4a7a50',
-    desc: 'A bolted equipment pad with power and air taps. Install a machine kit here.',
+    desc: 'Auto-cannon on the outer hull. Shoots hostile drones near the hull. Needs power from the bus and takes 1 ammo per shot from storage. A gunner on the crew makes it hit harder.',
   },
   junc: {
     n: 'Junction Box',
@@ -440,6 +428,21 @@ export const FN = {
 };
 /** Corridor pieces (hallways, hubs, tubes and welded connectors). Rooms may only dock onto these. */
 export const isHall = fn => !!(FN[fn] && FN[fn].hall);
+/**
+ * Where small gear (built from kits) may go, keeping one focus per room. `*` means any room.
+ * Hallways always stay clear. Turrets go on an outer wall of the room.
+ * @type {Record<string, '*' | string[]>}
+ */
+export const GEAR_ROOMS = {
+  locker: ['storage', 'cargo', 'workshop'],
+  bunk: ['hab', 'medbay'],
+  escrub: '*',
+  turret: '*',
+};
+export const gearAllowedIn = (type, fn) => {
+  const r = GEAR_ROOMS[type];
+  return !!r && !isHall(fn) && (r === '*' || r.includes(fn));
+};
 export const DPOOL = {
   hydro: 3,
   solar: 4,

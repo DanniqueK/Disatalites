@@ -156,11 +156,10 @@ function uiStation() {
   }
   G.mods.forEach((r, ri) => {
     const ms = G.machines.filter(
-      m => m.mod === r.id && !['terminal', 'locker', 'bunk', 'cryo', 'mount', 'hp'].includes(m.type),
+      m => m.mod === r.id && !['terminal', 'locker', 'bunk', 'cryo'].includes(m.type),
     );
-    const fm = G.machines.filter(m => m.mod === r.id && m.type === 'mount').length;
     const br = r.breaches.length;
-    s += `<div class="sh" style="letter-spacing:.08em">${esc(r.name.toUpperCase())} <span class="dim">${BR[r.brand].cc}</span>${r.ctl ? '' : ' <span class="warn">LOCKED</span>'}${fm ? ` <span class="dim">· ${fm} free mount${fm > 1 ? 's' : ''}</span>` : ''}<span class="cnt">${Math.round(r.pressure)}% atm${br ? ' <span class="bad">BREACH</span>' : ''}</span></div>`;
+    s += `<div class="sh" style="letter-spacing:.08em">${esc(r.name.toUpperCase())} <span class="dim">${BR[r.brand].cc}</span>${r.ctl ? '' : ' <span class="warn">LOCKED</span>'}<span class="cnt">${Math.round(r.pressure)}% atm${br ? ' <span class="bad">BREACH</span>' : ''}</span></div>`;
     for (const m of ms) {
       const st = machineStatus(m);
       s += `<div class="row" data-m="${m.id}"><span class="nm" style="color:${st === 'ONLINE' ? '#2fdc4f' : st === 'BROKEN' ? '#ff6a6a' : '#ffc040'}">${esc(MD[m.type].n)}</span><span class="dim" style="font-size:11px">${st}</span>${ibar(m.cond, 100)}</div>`;

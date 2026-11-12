@@ -1,4 +1,4 @@
-import { BRANDS, EN, FN, FX, isHall, mk, XTRA } from '../core/data.js';
+import { BRANDS, EN, FN, FX, gearAllowedIn, isHall, mk, XTRA } from '../core/data.js';
 import { random } from '../core/rng.js';
 import { cheb, D4, pick, rnd, rr, shuffle } from '../core/util.js';
 import { cloneShape, hallShape, roomShape, setCell, shapeFloors } from './shapes.js';
@@ -73,10 +73,9 @@ export function makePack(fn, brand, opts) {
   else if (fill !== 'shell') {
     const P1 = fill === 'station' ? 0.8 : 0.55;
     for (const t of smalls) if (random() < P1) want.push(t);
-    if (!isHall(fn) && random() < (fill === 'station' ? 0.45 : 0.3))
-      want.push(pick(XTRA[opts.kind] || XTRA.any));
+    const extra = (XTRA[opts.kind] || XTRA.any).filter(t => gearAllowedIn(t, fn));
+    if (extra.length && random() < (fill === 'station' ? 0.45 : 0.3)) want.push(pick(extra));
   }
-  const nMount = isHall(fn) ? 0 : want.length + rr(1, 2);
   const condOf = t => {
     if (opts.cond) return opts.cond(t);
     if (fill === 'shell') return FX[t] ? rr(25, 40) : 100;
@@ -229,7 +228,7 @@ export function makePack(fn, brand, opts) {
       pack.mach.push({ type: 'junc', lx: j.x, ly: j.y, wall: true, cond: cnd('junc'), on: true, prog: 0 });
     }
     let wi = 0;
-    for (let k = 0; k < nMount; k++) {
+    while (wi < want.length) {
       const c = cands.find(
         ([x, y]) =>
           !blocked.has(x + ',' + y) &&
@@ -244,12 +243,12 @@ export function makePack(fn, brand, opts) {
           })(),
       );
       if (!c) break;
-      const t = wi < want.length ? want[wi++] : 'mount';
+      const t = want[wi++];
       pack.mach.push({
         type: t,
         lx: c[0],
         ly: c[1],
-        cond: t === 'mount' ? 100 : condOf(t),
+        cond: condOf(t),
         on: true,
         prog: 0,
       });
@@ -259,7 +258,7 @@ export function makePack(fn, brand, opts) {
       if (again) return again;
     }
 
-    // hardpoints: straight outer wall cells facing space
+    // hull turrets: straight outer wall cells facing space
     if (!isHall(fn)) {
       const hc = [];
       for (let y = 0; y < sh.h; y++)
@@ -292,7 +291,6 @@ export function makePack(fn, brand, opts) {
       for (const [x, y] of hc) {
         if (nh <= 0) break;
         if (used.some(u => cheb(u[0], u[1], x, y) < 3)) continue;
-        used.push([x, y]);
         nh--;
         const arm =
           fill !== 'shell' &&
@@ -301,12 +299,14 @@ export function makePack(fn, brand, opts) {
             : opts.kind === 'military' || opts.kind === 'rogue'
               ? random() < 0.6
               : false);
+        if (!arm) continue;
+        used.push([x, y]);
         pack.mach.push({
-          type: arm ? 'turret' : 'hp',
+          type: 'turret',
           lx: x,
           ly: y,
           wall: true,
-          cond: arm ? condOf('turret') : 100,
+          cond: condOf('turret'),
           on: true,
           prog: 0,
         });
