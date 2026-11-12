@@ -1,4 +1,4 @@
-import { releaseTow, selDrone, taskText } from '../actions/exterior.js';
+import { releaseTow, selDrone, taskText, trackButton } from '../actions/exterior.js';
 import { EGH, EGW, T, WH, WW } from '../core/constants.js';
 import {
   bandOf,
@@ -28,6 +28,7 @@ import { cheb, clamp, esc, idx, rr } from '../core/util.js';
 import { atHatch } from '../sim/exterior-tick.js';
 import { stats } from '../sim/stats.js';
 import { refresh } from '../sim/turn.js';
+import { isWatched } from '../sim/watch.js';
 import { cellOf, isHome, shares } from '../space/earth.js';
 import { hatchOf, objById, stationBox } from '../space/exterior-objects.js';
 import {
@@ -52,7 +53,7 @@ import {
 import { $ } from './dom.js';
 import { showModal } from './log-modal.js';
 import { C } from './palette.js';
-import { setTab } from './panels.js';
+import { setTab, watchHtml } from './panels.js';
 import { reducedMotion, SETTINGS } from './settings.js';
 import { freePorts, hullNear, modById, modCells, modIndex } from '../world/build.js';
 import { modBreaches } from '../world/control.js';
@@ -340,6 +341,15 @@ function roomsOverlay(sx, sy, ts) {
       ctx.fillText(l, sx(r.cx), py + 3 + (fs + 2) * i + fs / 2 + 1);
     });
   }
+}
+/** Cyan frame around something on the watch list; it blinks unless motion is reduced. */
+function watchMark(px, py, ts) {
+  const on = reducedMotion() || Math.floor(performance.now() / 400) % 2 === 0;
+  ctx.strokeStyle = on ? 'rgba(64,224,255,.95)' : 'rgba(64,224,255,.35)';
+  ctx.lineWidth = 2;
+  const pad = Math.max(3, ts * 0.4);
+  ctx.strokeRect(px - pad, py - pad, ts + pad * 2, ts + pad * 2);
+  ctx.lineWidth = 1;
 }
 function tile(x, y, px, py, v, ts) {
   const i = idx(x, y),
@@ -1320,6 +1330,7 @@ function renderExt() {
         glyph('H', sx(k.hatch[0]), sy(k.hatch[1]), '#ffff50', ts);
   }
   const objs = G.ext.objs.filter(o => o.sec === V.sec && o.seen !== false);
+  for (const o of objs) if (isWatched('obj', o.id)) watchMark(sx(o.x), sy(o.y), ts);
   for (const o of objs) {
     if (o.kind === 'platform') {
       const L = G.legacy[o.lid];
@@ -2067,6 +2078,7 @@ function renderOrbit() {
       py = sy(ay) + ts / 2;
     if (px < -ts * 6 || py < -ts * 6 || px > cssW + ts * 6 || py > cssH + ts * 6) continue;
     const sel = s2.id === V.osel;
+    if (isWatched('sec', s2.id)) watchMark(px - ts / 2, py - ts / 2, ts);
     if (D === 1) {
       ctx.fillStyle = `rgba(224,176,32,${0.07 + 0.05 * pulse})`;
       ctx.beginPath();
@@ -2280,6 +2292,7 @@ export function orbitTap(s) {
         body += '\n\nThe station could move here if it had a working Ion Drive (found on military stations).';
     }
   }
+  if (s.id !== G.home) b.push(trackButton('sec', s.id));
   b.push({ t: 'Close' });
   showModal(title, body, b);
 }
@@ -2305,7 +2318,7 @@ export function uiOrbit() {
     f += `<div class="row" data-sec="${s.id}"><span class="nm" style="color:${D === 1 ? '#e0b020' : T2.c}">${D === 1 ? '? ' + cid(s) + ' unknown · ' + SIGN[s.type][1] : T2.g + ' ' + esc(s.name)}</span><span class="dim" style="font-size:11px">${travelTime(G.home, s.id)}t</span></div>`;
   }
   if (!list.length) f = '<div class="dim">No contacts.</div>';
-  $('#ctx2').innerHTML = f;
+  $('#ctx2').innerHTML = watchHtml() + f;
 }
 function drawFx() {
   const now = performance.now();

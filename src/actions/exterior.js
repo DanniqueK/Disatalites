@@ -5,6 +5,7 @@ import { G, M, V } from '../core/state.js';
 import { cheb, dirName, idx, inB, rr } from '../core/util.js';
 import { atHatch, cargoLoad } from '../sim/exterior-tick.js';
 import { refresh } from '../sim/turn.js';
+import { isWatched, toggleWatch } from '../sim/watch.js';
 import { derHit, hatchOf, objById } from '../space/exterior-objects.js';
 import { hackStatus, HULL, LC, locked, tagName, travelTime, where } from '../space/sectors.js';
 import { showModal } from '../ui/log-modal.js';
@@ -101,7 +102,7 @@ function towMenu(d, o) {
       )
       .concat(park)
       .concat(scrapOpts(d, o))
-      .concat([{ t: 'Cancel' }]),
+      .concat([trackButton('obj', o.id), { t: 'Cancel' }]),
   );
 }
 export function extTap(x, y) {
@@ -330,8 +331,19 @@ function salvageMenu(d, o, title, blocked, go) {
     d.sec !== o.sec ? ` (travel about ${travelTime(d.sec < 0 ? G.home : d.sec, o.sec)} turns first)` : '';
   showModal(title, `${estimateText(salvageEstimate(o, d))}${blocked ? `\n\n${blocked}` : ''}`, [
     { t: `Send ${d.name}${eta}`, dis: !!blocked, f: go },
+    trackButton('obj', o.id),
     { t: 'Cancel' },
   ]);
+}
+/** "Track" / "Stop tracking" for the watch list. */
+export function trackButton(kind, id) {
+  return {
+    t: isWatched(kind, id) ? 'Stop tracking' : 'Track on the watch list',
+    f: () => {
+      toggleWatch(kind, id);
+      refresh();
+    },
+  };
 }
 /**
  * Corridor pieces a Utility drone can build at a free door. A hallway kit pays for a hallway segment.

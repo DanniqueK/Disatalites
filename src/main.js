@@ -27,7 +27,7 @@ import { installUi } from './ui/app.js';
 import { $ } from './ui/dom.js';
 import { showHelp, showTitle } from './ui/help-title.js';
 import { closeModal, modalKeys, pickModal, showLog } from './ui/log-modal.js';
-import { padAction, setTab } from './ui/panels.js';
+import { focusWatched, padAction, setTab } from './ui/panels.js';
 import {
   CAM,
   cssH,
@@ -196,6 +196,7 @@ $('#side').addEventListener('click', e => {
     return refresh();
   }
   if (row.dataset.sec) return orbitTap(G.sectors[+row.dataset.sec]);
+  if (row.dataset.wobj) return focusWatched(+row.dataset.wobj);
   if (row.dataset.m) {
     const m = G.machines.find(x => x.id === +row.dataset.m);
     if (m) {
