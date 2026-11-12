@@ -349,9 +349,4 @@ Multi-turn actions (wait, repair until done, rest, claim) call `endTurn(true)` i
 
 ## Known quirks
 
-Things noticed while documenting. They are not fixed here.
-
-- `stationMenu` shows "Hack progress: hackp/req (+N per turn)", and `taskText2` and `uiExt` show a hack percentage from `st.hackp`. Nothing increases `st.hackp` any more since the intrusion console replaced the old progress hack, so these always show 0.
-- The help text says hardpoints are shown as `+` in outer walls. The `hp` machine glyph is `^`.
-- The STATION tab hint says "Z/X/C: views". The help text lists Z/X/O/C, and `o` (Orbit) also works.
-- In the STATION view, lowercase `l` moves right (vi keys), so the log needs Shift+L there. The README lists it as `L`.
+None at the moment. Report new ones as GitHub issues, with the run seed from the help screen.

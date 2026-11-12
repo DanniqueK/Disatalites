@@ -10,7 +10,7 @@ import { atHatch } from '../sim/exterior-tick.js';
 import { stats } from '../sim/stats.js';
 import { refresh, waitN } from '../sim/turn.js';
 import { power, shares } from '../space/earth.js';
-import { activeSweep, HULL, locked, SEC, secName, tagName } from '../space/sectors.js';
+import { activeSweep, hackStatus, HULL, locked, SEC, secName, tagName } from '../space/sectors.js';
 import { $ } from './dom.js';
 import { showHelp } from './help-title.js';
 import { showLog } from './log-modal.js';
@@ -67,7 +67,7 @@ export function updateUI() {
   });
   $('#tabInfo').textContent =
     V.tab === 'station'
-      ? 'WASD/arrows: move · click or U: use · bump: attack · R wait 10 · F fire · G get · L log · Z/X/C: views'
+      ? 'WASD/arrows: move · click or U: use · bump: attack · R wait 10 · F fire · G get · Shift+L log · Z/X/O/C: views'
       : V.tab === 'ext'
         ? V.tubePlan
           ? 'TUBE PLANNER: tap open space or another free port as the end · tap the start port to cancel'
@@ -208,7 +208,7 @@ function uiExt() {
   s += sts
     .map(
       st =>
-        `<div style="color:${st.state === 'hostile' ? '#ff8a6a' : '#7fffb0'}">${esc(st.name)} · sec ${st.ice} · ${st.state === 'hostile' ? (st.alert ? 'ALERT' : 'hostile') + (st.hackp ? ' · hack ' + Math.floor((st.hackp / (25 * st.ice)) * 100) + '%' : '') : 'subdued'}</div>`,
+        `<div style="color:${st.state === 'hostile' ? '#ff8a6a' : '#7fffb0'}">${esc(st.name)} · sec ${st.ice} · ${st.state === 'hostile' ? (st.alert ? 'ALERT' : 'hostile') + (st.hk ? ' · hack ' + hackStatus(st) : '') : 'subdued'}</div>`,
     )
     .join('');
   s += `<div>Loose sections: ${

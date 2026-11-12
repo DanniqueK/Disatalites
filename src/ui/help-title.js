@@ -18,10 +18,10 @@ STATION view (inside, you):
  Click a machine (or stand next to it and press U) to repair, switch, or use it. Any machine can also be stripped for parts, even in a locked section, so you can always get scrap. Repairs cost scrap and circuits. Machines need 60% condition and power to run.
  Every section has one job, and its main machine (reactor, fabricator, scrubber, vats, racks...) is a large fixture built into the section. Fixtures cannot be moved: repair them, or gut them for parts (they drop to 0% and can be rebuilt with repairs). Small gear (storage racks, bunks, emergency scrubbers, turrets) sits on mounts (dotted pads) and can be uninstalled into kits and moved.
  Junction Boxes (J) carry power between sections. A broken one cuts that section and everything past it off the bus.
- Hardpoints (+ in outer walls) take Hull Turret kits. Turrets need power and use 1 ammo per shot from storage; Storage Racks raise the ammo cap.
+ Hardpoints (^ in outer walls) take Hull Turret kits. Turrets need power and use 1 ammo per shot from storage; Storage Racks raise the ammo cap.
  Crew go to work by themselves: engineers fix things (using scrap), others staff their station (pilot: Drone Rack or Ion Drive, hacker: Comms or terminal, medic: Med Pod, gunner: turrets, botanist: hydroponics). Their bonus only counts while they are on duty. They avoid vacuum, except engineers.
  Click a red x (hull breach) to patch it. Low pressure drains your suit O2. Scrubbers have a capacity: a bigger station needs more air.
- $ crates hold resources. G picks up gear and dormant drones. F fires, TAB targets. L opens the full log.
+ $ crates hold resources. G picks up gear and dormant drones. F fires, TAB targets. Shift+L opens the full log (plain L is a vi move key here).
 
 EXTERIOR view (drones). It has two maps: the HULL (your station and the space right around it, where you build) and LOCAL SPACE (the region around you: debris, wrecks, stations). Drones fly between them in a couple of turns; tap KESTREL-9 in local space to send a drone back.
  HULL EDITING (Utility drone): tap a free port to weld on a prefab connector (collar, straight tube, long spine, elbow, T-junction, cross, node hub), to lay a tube along any clear route (to open space, or to another free port to make a loop), to construct a section from a hull schematic, or to seal it. Tap an outer wall to cut a new port. Tap a door (joint) to see its load and brace it.
@@ -49,7 +49,7 @@ EARTH view (politics):
  Legacy satellites shoot settlements and satellites of anyone not in their IFF tables. Spoofing tags is your strongest lever.
 
 Events are paced by a storyteller: quiet stretches, then trouble, then time to recover. It goes easier on you when you are struggling.
-Keys: Z/X/O/C views, T tags, L log, . or SPACE wait, ? help. Autosaves in this browser.${G && G.seed != null ? `\n\nRun seed: ${G.seed} (mention it when reporting a bug)` : ''}`,
+Keys: Z/X/O/C views, T tags, Shift+L log (L also works outside the STATION view), . or SPACE wait, ? help. Autosaves in this browser.${G && G.seed != null ? `\n\nRun seed: ${G.seed} (mention it when reporting a bug)` : ''}`,
     [{ t: 'Close' }],
   );
 }
