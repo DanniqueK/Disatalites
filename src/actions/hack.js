@@ -4,6 +4,7 @@ import { G, V } from '../core/state.js';
 import { esc } from '../core/util.js';
 import { endTurn, refresh } from '../sim/turn.js';
 import { showModal } from '../ui/log-modal.js';
+import { C } from '../ui/palette.js';
 
 export function hackConsole(d) {
   const t = d && d.task;
@@ -22,7 +23,7 @@ export function hackConsole(d) {
   let gauge = '';
   for (let k = 0; k < 25; k++) {
     const on = k < tr / 4;
-    gauge += `<i style="background:${on ? (k >= 20 ? '#ff3a2a' : k >= 14 ? '#e0b020' : '#2fbf4f') : '#0b140c'}"></i>`;
+    gauge += `<i style="background:${on ? (k >= 20 ? C.bad : k >= 14 ? C.warn : C.good) : '#0b140c'}"></i>`;
   }
   const plates = H.L.map((l, k) => {
     const done = k < H.i,

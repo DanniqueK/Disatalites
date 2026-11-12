@@ -1,3 +1,17 @@
+/* Text size setting: panels and dialogs only, so the map canvas keeps its pointer mapping. */
+#top,
+#side,
+#tabs,
+#pad,
+.mbox {
+  zoom: var(--ui-zoom, 1);
+}
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation: none !important;
+  transition: none !important;
+}
 /* Share Tech Mono by Carrois Type Design, SIL Open Font License 1.1 (assets/fonts/OFL.txt). */
 @font-face {
   font-family: 'Share Tech Mono';

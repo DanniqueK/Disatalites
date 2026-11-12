@@ -51,7 +51,9 @@ import {
 } from '../space/sectors.js';
 import { $ } from './dom.js';
 import { showModal } from './log-modal.js';
+import { C } from './palette.js';
 import { setTab } from './panels.js';
+import { reducedMotion, SETTINGS } from './settings.js';
 import { freePorts, hullNear, modById, modCells, modIndex } from '../world/build.js';
 import { modBreaches } from '../world/control.js';
 import { commsOnline, ctlOK, hasOnline, machineStatus, online } from '../world/machines.js';
@@ -94,7 +96,9 @@ export function render() {
   drawFx();
 }
 function renderStation() {
-  TS = narrow() ? 18 : clamp(Math.floor(Math.min(cssW / 44, cssH / 27)), 14, 26);
+  TS = narrow()
+    ? Math.round(18 * SETTINGS.tiles)
+    : clamp(Math.floor(Math.min(cssW / 44, cssH / 27) * SETTINGS.tiles), 11, 39);
   const vw = cssW / TS,
     vh = cssH / TS;
   CAM.x = clamp(P.x - Math.floor(vw / 2), 0, WW - Math.floor(vw));
@@ -332,7 +336,7 @@ function roomsOverlay(sx, sy, ts) {
     ctx.lineWidth = 1;
     ctx.strokeRect(px + 0.5, py + 0.5, w - 1, h - 1);
     lines.forEach((l, i) => {
-      ctx.fillStyle = i === 0 ? st.color : i === 1 ? (st.problems.length ? '#ffb040' : '#2fdc4f') : '#9ab0a0';
+      ctx.fillStyle = i === 0 ? st.color : i === 1 ? (st.problems.length ? C.warn : C.good) : '#9ab0a0';
       ctx.fillText(l, sx(r.cx), py + 3 + (fs + 2) * i + fs / 2 + 1);
     });
   }
@@ -421,10 +425,10 @@ function tile(x, y, px, py, v, ts) {
                   ? '#e04040'
                   : '#ffa040'
                 : mine
-                  ? '#2fdc4f'
+                  ? C.good
                   : k.cond < 60
-                    ? '#e04040'
-                    : '#e0c030';
+                    ? C.bad
+                    : C.warn;
         const [fx, fy] = k.face || [0, 1];
         const pw = ts * 0.62,
           cx = px + ts / 2 + fx * ts * 0.16,
@@ -458,7 +462,7 @@ function tile(x, y, px, py, v, ts) {
             ? '#33300e'
             : '#181606';
       ctx.fillRect(px + 1, py + 1, ts - 2, ts - 2);
-      ctx.strokeStyle = on ? '#2fdc4f' : k.cond < 60 ? '#a03030' : '#a09030';
+      ctx.strokeStyle = on ? C.good : k.cond < 60 ? C.bad : C.warn;
       ctx.globalAlpha = v ? 1 : 0.4;
       ctx.lineWidth = 1;
       ctx.strokeRect(px + 1.5, py + 1.5, ts - 3, ts - 3);
@@ -1066,7 +1070,7 @@ function drawFixtures(sx, sy, ts, X0, Y0, X1, Y1) {
       lh = sw ? H : W;
     const on = online(k),
       broken = k.cond < 60;
-    const S = { on, broken, t, k, lampC: on ? '#2fdc4f' : broken ? '#ff3a2a' : '#e0b020' };
+    const S = { on, broken, t, k, lampC: on ? C.good : broken ? C.bad : C.warn };
     ctx.save();
     ctx.globalAlpha = vis ? 1 : 0.5;
     ctx.translate(sx(b.x0) + W / 2, sy(b.y0) + H / 2);
@@ -1078,7 +1082,7 @@ function drawFixtures(sx, sy, ts, X0, Y0, X1, Y1) {
   }
 }
 setInterval(() => {
-  if (G && V.tab === 'station' && V.animFx && !document.hidden && !V.modalOpen) render();
+  if (G && V.tab === 'station' && V.animFx && !reducedMotion() && !document.hidden && !V.modalOpen) render();
 }, 160);
 const TAGA = [0.5, 0.22];
 export const cycTags = () => {
@@ -2035,7 +2039,7 @@ function renderOrbit() {
     ctx.stroke();
     kick();
   }
-  const pulse = 0.55 + 0.45 * Math.sin(now / 350);
+  const pulse = reducedMotion() ? 1 : 0.55 + 0.45 * Math.sin(now / 350);
   for (const s2 of G.sectors) {
     const D = det(s2);
     if (!D) continue;
