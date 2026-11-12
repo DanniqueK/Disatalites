@@ -1,14 +1,16 @@
 // Display settings, stored in the browser separately from the save.
+import { V } from '../core/state.js';
 import { refresh } from '../sim/turn.js';
+import { setVolume } from './audio.js';
 import { showModal } from './log-modal.js';
 import { setPalette } from './palette.js';
 import { cycTags, resize } from './render.js';
-import { V } from '../core/state.js';
 
 const KEY = 'kestrel9.settings';
 const TEXT = [1, 1.15, 1.3, 1.5];
 const TILES = [0.8, 1, 1.25, 1.5];
 const TAG_MODES = ['see-through', 'faint', 'off'];
+const VOLUME = [0, 0.25, 0.5, 0.75, 1];
 
 export const SETTINGS = {
   text: 1,
@@ -17,6 +19,7 @@ export const SETTINGS = {
   motion: 'full',
   /** @type {'standard' | 'colorblind'} */
   palette: 'standard',
+  volume: 0.5,
 };
 
 export const reducedMotion = () => SETTINGS.motion === 'reduced';
@@ -34,6 +37,7 @@ export function loadSettings() {
     if (TILES.includes(s.tiles)) SETTINGS.tiles = s.tiles;
     if (s.motion === 'reduced') SETTINGS.motion = 'reduced';
     if (s.palette === 'colorblind') SETTINGS.palette = 'colorblind';
+    if (VOLUME.includes(s.volume)) SETTINGS.volume = s.volume;
   } catch (e) {}
   applySettings();
 }
@@ -42,6 +46,7 @@ export function applySettings() {
   document.documentElement.style.setProperty('--ui-zoom', String(SETTINGS.text));
   document.body.classList.toggle('reduce-motion', reducedMotion());
   setPalette(SETTINGS.palette);
+  setVolume(SETTINGS.volume);
   resize();
 }
 
@@ -79,6 +84,10 @@ export function settingsMenu(back) {
         f: change(() => (SETTINGS.palette = SETTINGS.palette === 'standard' ? 'colorblind' : 'standard')),
       },
       { t: `Labels: ${tagMode}`, f: change(() => cycTags()) },
+      {
+        t: `Sound: ${SETTINGS.volume ? pct(SETTINGS.volume) : 'off'}`,
+        f: change(() => (SETTINGS.volume = next(VOLUME, SETTINGS.volume))),
+      },
       { t: 'Back', k: 'close', f: back },
     ],
   );

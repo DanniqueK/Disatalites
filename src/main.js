@@ -24,6 +24,7 @@ import { canAct, endTurn, refresh, waitN } from './sim/turn.js';
 import { cellName } from './space/earth.js';
 import { machAt } from './space/sectors.js';
 import { installUi } from './ui/app.js';
+import { installAudio } from './ui/audio.js';
 import { $ } from './ui/dom.js';
 import { showHelp, showTitle } from './ui/help-title.js';
 import { closeModal, modalKeys, pickModal, showLog } from './ui/log-modal.js';
@@ -48,6 +49,7 @@ import { loadSettings } from './ui/settings.js';
 import { machineStatus } from './world/machines.js';
 import { newGame } from './world/new-game.js';
 
+installAudio();
 loadSettings();
 installUi();
 document.addEventListener('visibilitychange', () => {

@@ -10,6 +10,7 @@
  * @property {string} tab         Switch the map to this view.
  * @property {undefined} title    Show the title screen.
  * @property {number} hack        Open the intrusion console for this drone id.
+ * @property {{ m: string, c: string }} log A line was added to the log (sound, notifications).
  */
 
 /** @type {Map<string, Set<Function>>} */

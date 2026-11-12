@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { on } from '../src/core/events.js';
+import { log } from '../src/core/messages.js';
 import { G, P } from '../src/core/state.js';
 import { endTurn } from '../src/sim/turn.js';
 import { newGame } from '../src/world/new-game.js';
@@ -17,6 +18,15 @@ describe('game core runs headless', () => {
     }
     expect(G.turn).toBeGreaterThan(0);
     expect(G.log.length).toBeGreaterThan(0);
+  });
+
+  it('every log line is announced as an event (used for sound)', () => {
+    newGame('clone', 3);
+    const heard = [];
+    const off = on('log', e => heard.push(e));
+    log('Test alarm', 'bad');
+    off();
+    expect(heard).toEqual([{ m: 'Test alarm', c: 'bad' }]);
   });
 
   it('endTurn announces state changes through events, not UI calls', () => {
