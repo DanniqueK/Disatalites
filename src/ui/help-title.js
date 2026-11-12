@@ -13,10 +13,12 @@ import {
 import { G, V } from '../core/state.js';
 import { refresh } from '../sim/turn.js';
 import { HULL } from '../space/sectors.js';
-import { closeModal, modalBtns, showModal } from './log-modal.js';
+import { closeModal, showModal } from './log-modal.js';
+import { settingsMenu } from './settings.js';
 import { newGame } from '../world/new-game.js';
 
-export function showHelp() {
+/** @param {() => void} [back] Where Close returns to (the title screen when opened from there). */
+export function showHelp(back) {
   showModal(
     'HOW TO PLAY',
     `You wake alone in a tiny, half-dead cluster of modules over a ruined Earth. KESTREL-9 was always a patchwork of sections from different countries and companies. Rebuild it, grow it, and decide which surface power gets the sky.
@@ -60,7 +62,10 @@ EARTH view (politics):
 
 Events are paced by a storyteller: quiet stretches, then trouble, then time to recover. It goes easier on you when you are struggling.
 Keys: Z/X/O/C views, T tags, V rooms overlay (STATION), Shift+L log (L also works outside the STATION view), . or SPACE wait, ? help. Autosaves in this browser.${G && G.seed != null ? `\n\nRun seed: ${G.seed} (mention it when reporting a bug)` : ''}`,
-    autosaveOn() ? [{ t: 'Close' }, { t: 'Export save file', f: () => downloadSave() }] : [{ t: 'Close' }],
+    [
+      { t: 'Close', k: 'close', f: back },
+      { t: 'Settings', f: () => settingsMenu(() => showHelp(back)) },
+    ].concat(autosaveOn() ? [{ t: 'Export save file', f: () => downloadSave() }] : []),
   );
 }
 function downloadText(name, text) {
@@ -137,10 +142,10 @@ export function showTitle() {
   btns.push({
     t: 'How to play',
     f: () => {
-      showHelp();
-      modalBtns[0].f = showTitle;
+      showHelp(showTitle);
     },
   });
+  btns.push({ t: 'Settings', f: () => settingsMenu(showTitle) });
   showModal(
     'K E S T R E L - 9   //   O R B I T A L   W A R D',
     `Earth below is a nuclear wasteland. The survivors are still in their bunkers, because old defense satellites from long-dead nations fire on anything their IFF tables don't recognize. That is everyone alive.

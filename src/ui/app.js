@@ -7,6 +7,7 @@ import { showTitle } from './help-title.js';
 import { flushModals } from './log-modal.js';
 import { setTab, updateUI } from './panels.js';
 import { kick, render } from './render.js';
+import { reducedMotion } from './settings.js';
 
 let hurtTimer = 0;
 
@@ -30,20 +31,24 @@ export function installUi() {
     flushModals();
   });
   on('fx', f => {
+    if (reducedMotion()) return;
     f.t0 = performance.now();
     V.fx.push(f);
     kick();
   });
   on('hurt', () => {
+    if (reducedMotion()) return;
     const mw = $('#mapWrap');
     mw.classList.add('hurt');
     clearTimeout(hurtTimer);
     hurtTimer = setTimeout(() => mw.classList.remove('hurt'), 220);
   });
   on('sweep', ({ R }) => {
+    if (reducedMotion()) return;
     V.sweep = { t0: performance.now(), R };
   });
   on('strike', ({ x, y }) => {
+    if (reducedMotion()) return;
     V.strikes.push({ x, y, t0: performance.now() });
   });
   on('tab', tab => setTab(tab));

@@ -4,6 +4,7 @@ import { esc, pad5 } from '../core/util.js';
 import { stopTravel } from '../main.js';
 import { refresh } from '../sim/turn.js';
 import { $ } from './dom.js';
+import { C } from './palette.js';
 import { machineStatus } from '../world/machines.js';
 
 /** @typedef {import('../core/types.js').ModalButton} ModalButton */
@@ -115,10 +116,10 @@ export function machinePlate(m, extra) {
           : 'LOCKED'
       : machineStatus(m);
   const sc = /ONLINE|YOURS|IDLE|BUSY|READY/.test(st)
-    ? '#2fdc4f'
+    ? C.good
     : /BROKEN|DAMAGED|NO /.test(st)
-      ? '#ff4a3a'
-      : '#e0b020';
+      ? C.bad
+      : C.warn;
   const n = 20,
     on = Math.round((Math.min(100, m.cond) / 100) * n);
   let g = '';

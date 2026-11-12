@@ -14,6 +14,7 @@ import { activeSweep, hackStatus, HULL, locked, SEC, secName, tagName } from '..
 import { $ } from './dom.js';
 import { showHelp } from './help-title.js';
 import { showLog } from './log-modal.js';
+import { C } from './palette.js';
 import { cycTags, focusOrbit, render, toggleRooms, uiOrbit } from './render.js';
 import { freePorts } from '../world/build.js';
 import { modAtP, pressureAt } from '../world/fov.js';
@@ -25,7 +26,7 @@ function bar(label, v, m, col) {
 function ibar(v, m) {
   const n = 10,
     f = Math.round(clamp(v / m, 0, 1) * n);
-  const col = v / m > 0.66 ? '#2fdc4f' : v / m > 0.33 ? '#ffc040' : '#ff4a4a';
+  const col = v / m > 0.66 ? C.good : v / m > 0.33 ? C.warn : C.bad;
   return `<span class="ib" style="color:${col}">${'|'.repeat(f)}</span><span class="ib" style="color:#123a18">${'|'.repeat(n - f)}</span>`;
 }
 export function setTab(t) {
@@ -160,7 +161,7 @@ function uiStation() {
     s += `<div class="sh" style="letter-spacing:.08em">${esc(r.name.toUpperCase())} <span class="dim">${BR[r.brand].cc}</span>${r.ctl ? '' : ' <span class="warn">LOCKED</span>'}<span class="cnt">${Math.round(r.pressure)}% atm${br ? ' <span class="bad">BREACH</span>' : ''}</span></div>`;
     for (const m of ms) {
       const st = machineStatus(m);
-      s += `<div class="row" data-m="${m.id}"><span class="nm" style="color:${st === 'ONLINE' ? '#2fdc4f' : st === 'BROKEN' ? '#ff6a6a' : '#ffc040'}">${esc(MD[m.type].n)}</span><span class="dim" style="font-size:11px">${st}</span>${ibar(m.cond, 100)}</div>`;
+      s += `<div class="row" data-m="${m.id}"><span class="nm" style="color:${st === 'ONLINE' ? C.good : st === 'BROKEN' ? C.bad : C.warn}">${esc(MD[m.type].n)}</span><span class="dim" style="font-size:11px">${st}</span>${ibar(m.cond, 100)}</div>`;
     }
   });
   if (G.bot) s += '<div class="sh">MAINTENANCE BOT ACTIVE</div>';
@@ -175,7 +176,7 @@ function uiExt() {
       st = d.tr ? '#40c8ff' : atHatch(d) ? '#3fff6a' : d.task.type === 'idle' ? '#ffc040' : '#40e0c0';
     let g = '';
     for (let k = 0; k < 12; k++)
-      g += `<i style="${k < Math.round(fr * 12) ? 'background:' + (fr > 0.66 ? '#2fbf4f' : fr > 0.33 ? '#e0b020' : '#e03020') : ''}"></i>`;
+      g += `<i style="${k < Math.round(fr * 12) ? 'background:' + (fr > 0.66 ? C.good : fr > 0.33 ? C.warn : C.bad) : ''}"></i>`;
     h += `<div class="dcard ${d.id === G.sel ? 'sel' : ''}" data-d="${d.id}"><span class="led" style="color:${st}"></span><span class="dn">${d.name} <span class="dim" style="font-size:10px">${DT[d.dt].n.toUpperCase()}</span></span><span class="chips">${d.iface ? '<span class="chip" style="color:#ffa040">IF</span>' : ''}${d.scan ? '<span class="chip" style="color:#b08aff">SC</span>' : ''}</span><div class="lcd">${esc(taskText(d))}</div><div class="hpg">${g}</div></div>`;
   }
   if (!G.ext.drones.length) h += '<div class="lcd" style="color:#3a6a44">NO DRONES ON THE NET</div>';

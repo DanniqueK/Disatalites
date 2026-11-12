@@ -44,9 +44,11 @@ import {
   toggleRooms,
   TS,
 } from './ui/render.js';
+import { loadSettings } from './ui/settings.js';
 import { machineStatus } from './world/machines.js';
 import { newGame } from './world/new-game.js';
 
+loadSettings();
 installUi();
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) save();
