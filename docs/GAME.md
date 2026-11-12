@@ -1,6 +1,6 @@
 # KESTREL-9: Orbital Ward - game documentation
 
-This document describes the features of the game and how the code behind them works. `index.html` holds the markup, `src/style.css` the styles, and `src/` the game as native ES modules (entry point `src/main.js`). There is no build step and no dependency besides the Share Tech Mono web font from Google Fonts.
+This document describes the features of the game and how the code behind them works. `index.html` holds the markup, `src/style.css` the styles, and `src/` the game as native ES modules (entry point `src/main.js`). There is no build step and no dependency. The Share Tech Mono font (SIL Open Font License) is bundled in `assets/fonts/`.
 
 - [Feature overview](#feature-overview)
 - [Views](#views)
