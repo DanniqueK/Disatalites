@@ -17,6 +17,7 @@ describe('buildSite', () => {
     expect(html).not.toContain('src="src/main.js"');
     expect(existsSync(join(out, base, 'src/main.js'))).toBe(true);
     expect(existsSync(join(out, base, 'src/core/state.js'))).toBe(true);
+    expect(existsSync(join(out, base, 'assets/fonts/ShareTechMono-Regular.ttf'))).toBe(true);
     expect(existsSync(join(out, '.nojekyll'))).toBe(true);
   });
 

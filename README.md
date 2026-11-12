@@ -4,7 +4,7 @@ Turn-based roguelike set on a half-dead orbital station above a post-apocalyptic
 
 ## Play
 
-Plain HTML, CSS and native ES modules: no build step, no dependencies (it loads one web font from Google Fonts).
+Plain HTML, CSS and native ES modules: no build step, no dependencies, and no requests to other sites (the Share Tech Mono font is bundled in `assets/fonts/`, SIL Open Font License).
 
 Browsers don't load ES modules from `file://`, so serve the folder over HTTP, for example:
 

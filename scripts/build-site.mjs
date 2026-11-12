@@ -23,6 +23,7 @@ export function buildSite(outDir, version) {
   rmSync(outDir, { recursive: true, force: true });
   mkdirSync(join(outDir, base), { recursive: true });
   cpSync(join(root, 'src'), join(outDir, base, 'src'), { recursive: true });
+  cpSync(join(root, 'assets'), join(outDir, base, 'assets'), { recursive: true });
   const html = readFileSync(join(root, 'index.html'), 'utf8')
     .replace('href="src/style.css"', `href="${base}src/style.css"`)
     .replace('src="src/main.js"', `src="${base}src/main.js"`);
