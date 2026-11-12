@@ -21,6 +21,16 @@ export const MIGRATIONS = {
   11: d => {
     d.G.machines = d.G.machines.filter(k => k.type !== 'mount' && k.type !== 'hp');
   },
+  // v13: the tube planner, connector pieces and port cutting are gone; drones on those jobs stop.
+  12: d => {
+    for (const dr of d.G.ext.drones)
+      if (['tube', 'tube2', 'cut', 'brace'].includes(dr.task.type)) {
+        if (dr.task.type === 'tube') d.G.kits++;
+        if (dr.task.type === 'tube2' && dr.task.plan && dr.task.plan.paid)
+          d.G.kits += dr.task.plan.paid.k || 0;
+        dr.task = { type: 'idle' };
+      }
+  },
 };
 
 /**

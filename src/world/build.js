@@ -2,7 +2,7 @@ import { T, WALK, WH, WW } from '../core/constants.js';
 import { BR, EN, isHall } from '../core/data.js';
 import { log } from '../core/messages.js';
 import { G, M, P } from '../core/state.js';
-import { cheb, D4, D8, dirName, idx, inB, pick } from '../core/util.js';
+import { D4, D8, dirName, idx, inB, pick } from '../core/util.js';
 import { HULL } from '../space/sectors.js';
 import { online } from './machines.js';
 import { cloneShape, portWorld, rotD, rotDims, rotP, setCell, toLocal, toWorld } from './shapes.js';
@@ -391,44 +391,6 @@ export function packModule(mi) {
   rebuildMap();
   return { pack, cx, cy };
 }
-/* ---------- hull editing ---------- */
-export function cutSpot(m, lx, ly) {
-  const sh = m.shape,
-    g = (x, y) => (sh.g[y] || '')[x] || ' ';
-  if (g(lx, ly) !== '#') return null;
-  if (G.machines.some(k => k.mod === m.id && k.lx === lx && k.ly === ly)) return null;
-  if (m.breaches.some(b => b.lx === lx && b.ly === ly)) return null;
-  for (const [dx, dy] of D4) {
-    if (
-      g(lx - dx, ly - dy) === '.' &&
-      g(lx + dx, ly + dy) === ' ' &&
-      g(lx + dy, ly + dx) === '#' &&
-      g(lx - dy, ly - dx) === '#'
-    ) {
-      if (sh.ports.some(p => !p.sealed && Math.abs(p.x - lx) + Math.abs(p.y - ly) < 3)) return null;
-      const [wx, wy] = toWorld(m, lx, ly);
-      const [wdx, wdy] = rotD(dx, dy, m.rot);
-      if (!inB(wx + wdx, wy + wdy) || M.map[idx(wx + wdx, wy + wdy)] !== T.VOID) return null;
-      if (M.own[idx(wx, wy)] !== modIndex(m.id)) return null;
-      return { dx, dy, ox: wx + wdx, oy: wy + wdy };
-    }
-  }
-  return null;
-}
-export function doCut(m, lx, ly) {
-  const c = cutSpot(m, lx, ly);
-  if (!c) return false;
-  const sp = m.shape.ports.find(p => p.x === lx && p.y === ly);
-  if (sp) {
-    sp.sealed = false;
-    sp.dx = c.dx;
-    sp.dy = c.dy;
-  } else m.shape.ports.push({ x: lx, y: ly, dx: c.dx, dy: c.dy });
-  setCell(m.shape, lx, ly, 'P');
-  m.wins = m.wins.filter(([a, b]) => a !== lx || b !== ly);
-  rebuildMap();
-  return true;
-}
 export function doSeal(m, pi) {
   const p = m.shape.ports[pi];
   if (!p || m.links[pi] != null) return false;
@@ -437,219 +399,26 @@ export function doSeal(m, pi) {
   rebuildMap();
   return true;
 }
-/* tube planner: path from a free port to open space or to another free port */
-export function planTube(fp, tx, ty) {
-  const ports = freePorts();
-  const fp2 = ports.find(
-    p =>
-      !(p.mid === fp.mid && p.pi === fp.pi) &&
-      ((p.x + p.dx === tx && p.y + p.dy === ty) || (p.x === tx && p.y === ty)),
-  );
-  const s = [fp.x + fp.dx, fp.y + fp.dy];
-  let E;
-  if (fp2) E = [fp2.x + fp2.dx, fp2.y + fp2.dy];
-  else E = [tx, ty];
-  if (!inB(E[0], E[1]) || M.map[idx(E[0], E[1])] !== T.VOID)
-    return { err: 'The end point must be open space or a free port.' };
-  const nearEnd = (x, y) => cheb(x, y, s[0], s[1]) <= 1 || cheb(x, y, E[0], E[1]) <= 1;
-  const ok = (x, y) => {
-    if (x < 3 || y < 3 || x > WW - 4 || y > WH - 4) return false;
-    if (M.map[idx(x, y)] !== T.VOID) return false;
-    if (nearEnd(x, y)) return true;
-    for (const [dx, dy] of D8) if (M.map[idx(x + dx, y + dy)] !== T.VOID) return false;
-    return true;
-  };
-  const DI = d => D4.findIndex(([a, b]) => a === d[0] && b === d[1]);
-  const N = WW * WH * 4,
-    dist = new Float32Array(N).fill(1e9),
-    prv = new Int32Array(N).fill(-1);
-  const key = (x, y, d) => (idx(x, y) << 2) | d;
-  const f1 = [s[0] + fp.dx, s[1] + fp.dy];
-  if (!ok(f1[0], f1[1])) return { err: 'No room right outside that port.' };
-  const d0 = DI([fp.dx, fp.dy]);
-  const buckets = [];
-  const push = (k, c) => {
-    (buckets[c] || (buckets[c] = [])).push(k);
-  };
-  const k0 = key(f1[0], f1[1], d0);
-  dist[k0] = 1;
-  push(k0, 1);
-  let goal = -1;
-  const last = fp2 ? [E[0] + fp2.dx, E[1] + fp2.dy] : null;
-  for (let c = 0; c < buckets.length && c < 220 && goal < 0; c++) {
-    const B = buckets[c];
-    if (!B) continue;
-    for (const k of B) {
-      if (dist[k] !== c) continue;
-      const d = k & 3,
-        i = k >> 2,
-        x = i % WW,
-        y = (i / WW) | 0;
-      if (fp2) {
-        if (x === last[0] && y === last[1]) {
-          goal = k;
-          break;
-        }
-      } else if (x === E[0] && y === E[1]) {
-        goal = k;
-        break;
-      }
-      for (let nd = 0; nd < 4; nd++) {
-        const [dx, dy] = D4[nd];
-        if (dx === -D4[d][0] && dy === -D4[d][1]) continue;
-        const nx = x + dx,
-          ny = y + dy;
-        if (fp2 && nx === E[0] && ny === E[1]) continue;
-        if (!ok(nx, ny)) continue;
-        const nc = c + 1 + (nd === d ? 0 : 4);
-        const nk = key(nx, ny, nd);
-        if (nc < dist[nk]) {
-          dist[nk] = nc;
-          prv[nk] = k;
-          push(nk, nc);
-        }
-      }
-    }
-  }
-  if (goal < 0)
-    return { err: 'No clear route. Tubes need a 3-wide free lane and cannot pass right next to other hull.' };
-  const cells = [];
-  for (let k = goal; k >= 0; k = prv[k]) {
-    const i = k >> 2;
-    cells.unshift([i % WW, (i / WW) | 0]);
-  }
-  let endDir;
-  if (fp2) {
-    cells.push([E[0], E[1]]);
-    endDir = [-fp2.dx, -fp2.dy];
-  } else {
-    endDir = D4[goal & 3];
-    const ax = E[0] + endDir[0],
-      ay = E[1] + endDir[1];
-    if (!inB(ax, ay) || M.map[idx(ax, ay)] !== T.VOID)
-      return { err: 'The open end needs space in front of it.' };
-  }
-  cells.unshift(s);
-  if (cells.length < 3) return { err: 'Too short. Pick a point further out.' };
-  if (cells.length > 44) return { err: 'Too long (max about 40 tiles). Add a section in between.' };
-  const xs = cells.map(c => c[0]),
-    ys = cells.map(c => c[1]);
-  const ox = Math.min(...xs) - 1,
-    oy = Math.min(...ys) - 1,
-    w = Math.max(...xs) - ox + 2,
-    h = Math.max(...ys) - oy + 2;
-  const g = [];
-  for (let y = 0; y < h; y++) g.push(new Array(w).fill(' '));
-  const L = c => [c[0] - ox, c[1] - oy];
-  cells.forEach((c, i) => {
-    const [x, y] = L(c);
-    g[y][x] = i === 0 || i === cells.length - 1 ? 'P' : '.';
-  });
-  cells.forEach((c, i) => {
-    const [x, y] = L(c);
-    if (g[y][x] === '.') {
-      for (const [dx, dy] of D8) {
-        const a = x + dx,
-          b = y + dy;
-        if (g[b] && g[b][a] === ' ') g[b][a] = '#';
-      }
-    }
-  });
-  const pDir = [[-fp.dx, -fp.dy], endDir];
-  [cells[0], cells[cells.length - 1]].forEach((c, k) => {
-    const [x, y] = L(c);
-    const [dx, dy] = pDir[k];
-    for (const [px, py] of [
-      [dy, dx],
-      [-dy, -dx],
-    ]) {
-      const a = x + px,
-        b = y + py;
-      if (g[b] && g[b][a] === ' ') g[b][a] = '#';
-    }
-  });
-  for (let y = 0; y < h; y++)
-    for (let x = 0; x < w; x++) {
-      const ch = g[y][x];
-      if (ch === ' ') continue;
-      const t = M.map[idx(ox + x, oy + y)];
-      if (t === T.VOID) continue;
-      if (ch === '#' && t === T.WALL) continue;
-      return { err: 'The tube would cut into existing hull.' };
-    }
-  const shape = {
-    kind: 'tube',
-    w,
-    h,
-    g: g.map(r => r.join('')),
-    ports: [
-      { x: s[0] - ox, y: s[1] - oy, dx: -fp.dx, dy: -fp.dy },
-      {
-        x: cells[cells.length - 1][0] - ox,
-        y: cells[cells.length - 1][1] - oy,
-        dx: endDir[0],
-        dy: endDir[1],
-      },
-    ],
-  };
-  const len = cells.length - 2;
-  return {
-    shape,
-    ox,
-    oy,
-    len,
-    cells,
-    mid: fp.mid,
-    pi: fp.pi,
-    mid2: fp2 ? fp2.mid : null,
-    pi2: fp2 ? fp2.pi : null,
-    cost: { s: len * 2, c: 1 },
-  };
-}
-export function buildTube(plan) {
-  const fp = freePorts().find(p => p.mid === plan.mid && p.pi === plan.pi);
-  if (!fp) return null;
-  const sh = plan.shape;
-  let jx = -1,
-    jy = -1;
-  const p0 = sh.ports[0];
-  const f1 = [p0.x - p0.dx, p0.y - p0.dy];
-  for (const [dx, dy] of D4) {
-    const a = f1[0] + dx,
-      b = f1[1] + dy;
-    if ((sh.g[b] || '')[a] === '#') {
-      jx = a;
-      jy = b;
-      break;
-    }
-  }
-  const pack = {
-    fn: 'tube',
-    brand: pick(['scav', 'aster', 'volkov', 'kibo']),
-    shape: sh,
-    name: 'Connector Tube',
-    mach: jx >= 0 ? [{ type: 'junc', lx: jx, ly: jy, wall: true, cond: 100 }] : [],
-    crates: [],
-    items: [],
-    actors: [],
-    breaches: [],
-    wins: [],
-    pressure: 0,
-    ctl: true,
-  };
-  const m = dockPack(pack, fp, { rot: 0, pi: 0, ox: plan.ox, oy: plan.oy }, true);
+/** The sealed door at world tile (x, y), if any, as { m, pi }. Only doors that open onto space count. */
+export function sealedDoorAt(x, y) {
+  const mi = M.own[idx(x, y)];
+  const m = G.mods[mi];
   if (!m) return null;
-  G.stat.docked++;
-  G.stat.tubes = (G.stat.tubes || 0) + 1;
-  if (plan.mid2 != null) {
-    const o = modById(plan.mid2);
-    if (o && o.links[plan.pi2] == null) {
-      m.links[1] = { mod: o.id, pi: plan.pi2 };
-      o.links[plan.pi2] = { mod: m.id, pi: 1 };
-      rebuildMap();
-    }
-  }
-  return m;
+  const [lx, ly] = toLocal(m, x, y);
+  const pi = m.shape.ports.findIndex(p => p.sealed && p.x === lx && p.y === ly);
+  if (pi < 0) return null;
+  const [dx, dy] = rotD(m.shape.ports[pi].dx, m.shape.ports[pi].dy, m.rot);
+  if (!inB(x + dx, y + dy) || M.map[idx(x + dx, y + dy)] !== T.VOID) return null;
+  return { m, pi };
+}
+export function doUnseal(m, pi) {
+  const p = m.shape.ports[pi];
+  if (!p || !p.sealed) return false;
+  p.sealed = false;
+  setCell(m.shape, p.x, p.y, 'P');
+  m.wins = m.wins.filter(([a, b]) => a !== p.x || b !== p.y);
+  rebuildMap();
+  return true;
 }
 export function canDetach(mi) {
   const m = G.mods[mi];

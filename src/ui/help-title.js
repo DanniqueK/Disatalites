@@ -24,7 +24,7 @@ STATION view (inside, you):
  $ crates hold resources. G picks up gear and dormant drones. F fires, TAB targets. Shift+L opens the full log (plain L is a vi move key here).
 
 EXTERIOR view (drones). It has two maps: the HULL (your station and the space right around it, where you build) and LOCAL SPACE (the region around you: debris, wrecks, stations). Drones fly between them in a couple of turns; tap KESTREL-9 in local space to send a drone back.
- HULL EDITING (Utility drone): tap a free port to weld on a prefab connector (collar, straight tube, long spine, elbow, T-junction, cross, node hub), to lay a tube along any clear route (to open space, or to another free port to make a loop), to construct a section from a hull schematic, or to seal it. Tap an outer wall to cut a new port.
+ BUILDING (Utility drone): tap a free door to build a hallway segment (a Hallway Kit from the Fabricator, or scrap and circuits) or a junction hub, to construct a room from a learned schematic (only onto a hallway door), or to seal the door. Tap a sealed door to open it again.
  LAYOUT: KESTREL-9 is built around 3-wide hallways and a central junction hub. Rooms are standard sizes and only dock onto hallway doors, never onto each other, so you can always walk the station along its corridors. A Connector Tube kit from the Fabricator adds another hallway segment.
  SENSORS (ORBIT tab): space starts unknown. Passive sensors slowly pick up loud things nearby. ACTIVE SWEEP finds every contact in range but tells everything in range where you are: dormant platforms may lock on and fire, rogue AIs may send hunters. Unknown contacts (?) can be identified with a focused scan (needs a Sensor Array or Comms Array, keeps you loud for a while) or by sending a drone.
  HACKING: a Utility drone at a foreign station opens the INTRUSION console. Each security layer has a type: AUTH (spoof a handshake), FIREWALL (inject a worm), WATCHDOG (raises trace while you sit on it), BLACK ICE (burns the drone on brute force). Probe to identify a layer and double your next brute force. At 100% trace the link burns and the station wakes up. You can also let the drone run its own script.
@@ -33,7 +33,7 @@ EXTERIOR view (drones). It has two maps: the HULL (your station and the space ri
  Get drones by recovering wrecks, finding dormant ones, or building them at a Fabricator. Activate them at a Drone Rack.
  Nothing is known at first: sensors only see a little way past your hull. Send drones out to find what is there.
  Other stations sit in orbit, each built by a single maker, each with a security core and turrets. Subdue them by HACKING (a Utility drone parks against the hull and cracks the core: quiet, keeps everything intact, lets you recruit the station's AI) or by FORCE (Guards kill turrets and the core: loud, some sections break apart).
- Once a station is subdued, tow its sections to any free hallway door on KESTREL-9: they snap on in whatever rotation fits. Connector tubes let you reach open space.
+ Once a station is subdued, tow its sections to any free hallway door on KESTREL-9: they snap on in whatever rotation fits. Extend the hallways to make room for more.
  Stealth lifeboats (+) hold survivors. Bring them home and they join your crew, each with a skill that runs part of the station for you.
  Tugs can unbolt a section and move it, so you can redesign the station later.
 

@@ -69,9 +69,7 @@ export function updateUI() {
     V.tab === 'station'
       ? 'WASD/arrows: move · click or U: use · bump: attack · R wait 10 · F fire · G get · Shift+L log · Z/X/O/C: views'
       : V.tab === 'ext'
-        ? V.tubePlan
-          ? 'TUBE PLANNER: tap open space or another free port as the end · tap the start port to cancel'
-          : 'select a drone, then tap a target · tap a port, door or wall to edit the hull · drag or WASD to pan'
+        ? 'select a drone, then tap a target · tap a free door to build hallways and rooms · drag or WASD to pan'
         : V.tab === 'orbit'
           ? 'tap a contact to scan it or send the selected drone · ACTIVE SWEEP is loud'
           : 'requests, legacy satellites, territory';

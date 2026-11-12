@@ -149,7 +149,7 @@ export const MD = {
     pri: 5,
     tech: 1,
     busyUse: 1,
-    desc: 'Builds drones, tube kits, satellites, gear and ammo. Draws power only while working.',
+    desc: 'Builds drones, hallway kits, satellites, gear and ammo. Draws power only while working.',
   },
   comms: {
     n: 'Comms Array',
@@ -424,7 +424,7 @@ export const FN = {
   engine: { n: 'Engine Block', m: ['thruster', 'thruster'], sz: 'M' },
   hall: { n: 'Hallway', m: [], hall: true },
   hub: { n: 'Junction Hub', m: [], hall: true },
-  tube: { n: 'Connector Tube', m: [], hall: true },
+  tube: { n: 'Hallway', m: [], hall: true },
 };
 /** Corridor pieces (hallways, hubs, tubes and welded connectors). Rooms may only dock onto these. */
 export const isHall = fn => !!(FN[fn] && FN[fn].hall);
@@ -464,7 +464,7 @@ export const DT = {
     cargo: 8,
     tow: 3,
     dmg: [3, 6],
-    desc: 'salvage, fetch, patch, build tubes, tow slowly',
+    desc: 'salvage, fetch, patch, build hallways and rooms, tow slowly',
   },
   tug: { n: 'Tug', hp: 50, spd: 1, cargo: 0, tow: 1, dmg: [2, 4], desc: 'tows fast, detaches sections' },
   guard: { n: 'Guard', hp: 60, spd: 2, cargo: 0, tow: 0, dmg: [6, 11], desc: 'fights rogue drones' },
@@ -536,7 +536,7 @@ export const RC = {
   drone_util: { n: 'Utility Drone', s: 12, c: 4, t: 10 },
   drone_tug: { n: 'Tug Drone', s: 20, c: 6, t: 14 },
   drone_guard: { n: 'Guard Drone', s: 16, c: 8, t: 12 },
-  tube: { n: 'Connector Tube Kit', s: 8, c: 1, t: 6 },
+  tube: { n: 'Hallway Kit', s: 8, c: 1, t: 6 },
   sat_COMMS: { n: 'COMMS Satellite', s: 20, c: 12, t: 20 },
   sat_WEATHER: { n: 'WEATHER Satellite', s: 22, c: 14, t: 22 },
   sat_NAV: { n: 'NAV Satellite', s: 22, c: 14, t: 22 },
@@ -941,8 +941,8 @@ export const OBJ = [
     ok: () => (G.schem || []).length > 0,
   },
   {
-    t: 'HULL: lay a connector tube from a free port, or construct a new section from a schematic.',
-    ok: () => (G.stat.tubes || 0) + (G.stat.built || 0) > 0,
+    t: 'HULL: build a hallway segment or hub at a free door, or construct a room from a schematic.',
+    ok: () => (G.stat.built || 0) > 0,
   },
   {
     t: 'Redesign: detach one of your sections with a Tug drone and dock it somewhere else.',
@@ -957,124 +957,6 @@ export function mk(key, frac) {
   if (d.hp) it.hp = Math.max(1, Math.round(d.hp * (frac == null ? 1 : frac)));
   return it;
 }
-
-/* prefab connector pieces: floor cells + ports [x,y,dx,dy] in a little local grid */
-export const CONN = {
-  collar: {
-    n: 'Docking collar',
-    d: 'A short coupler that pushes a port out by two tiles.',
-    f: [
-      [1, 0],
-      [2, 0],
-    ],
-    p: [
-      [0, 0, -1, 0],
-      [3, 0, 1, 0],
-    ],
-  },
-  straight: {
-    n: 'Straight tube',
-    d: 'Five-tile corridor.',
-    f: [
-      [1, 0],
-      [2, 0],
-      [3, 0],
-      [4, 0],
-      [5, 0],
-    ],
-    p: [
-      [0, 0, -1, 0],
-      [6, 0, 1, 0],
-    ],
-  },
-  long: {
-    n: 'Long spine',
-    d: 'Nine-tile corridor for reaching far.',
-    f: [
-      [1, 0],
-      [2, 0],
-      [3, 0],
-      [4, 0],
-      [5, 0],
-      [6, 0],
-      [7, 0],
-      [8, 0],
-      [9, 0],
-    ],
-    p: [
-      [0, 0, -1, 0],
-      [10, 0, 1, 0],
-    ],
-  },
-  elbow: {
-    n: 'Elbow',
-    d: 'A 90 degree bend.',
-    f: [
-      [1, 0],
-      [2, 0],
-      [2, 1],
-      [2, 2],
-    ],
-    p: [
-      [0, 0, -1, 0],
-      [2, 3, 0, 1],
-    ],
-  },
-  tee: {
-    n: 'T-junction',
-    d: 'Splits one line into two. Three ports.',
-    f: [
-      [1, 0],
-      [2, 0],
-      [3, 0],
-      [2, 1],
-      [2, 2],
-    ],
-    p: [
-      [0, 0, -1, 0],
-      [4, 0, 1, 0],
-      [2, 3, 0, 1],
-    ],
-  },
-  cross: {
-    n: 'Cross',
-    d: 'Four-way junction. Good for closing loops.',
-    f: [
-      [2, 1],
-      [1, 2],
-      [2, 2],
-      [3, 2],
-      [2, 3],
-    ],
-    p: [
-      [0, 2, -1, 0],
-      [4, 2, 1, 0],
-      [2, 0, 0, -1],
-      [2, 4, 0, 1],
-    ],
-  },
-  hub: {
-    n: 'Node hub',
-    d: 'A small pressurized room with a port on every side.',
-    f: [
-      [1, 1],
-      [2, 1],
-      [3, 1],
-      [1, 2],
-      [2, 2],
-      [3, 2],
-      [1, 3],
-      [2, 3],
-      [3, 3],
-    ],
-    p: [
-      [0, 2, -1, 0],
-      [4, 2, 1, 0],
-      [2, 0, 0, -1],
-      [2, 4, 0, 1],
-    ],
-  },
-};
 
 /* ---------- intrusion console ---------- */
 export const HK = {

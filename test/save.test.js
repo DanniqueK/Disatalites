@@ -85,6 +85,17 @@ describe('save and load', () => {
     expect(res.data.G.machines.some(k => k.type === 'mount' || k.type === 'hp')).toBe(false);
   });
 
+  it('stops drones on removed jobs in format 12 saves and returns their kits', () => {
+    const data = JSON.parse(serialize());
+    data.G.v = 12;
+    data.G.kits = 0;
+    data.G.ext.drones.push({ id: 1e6, task: { type: 'tube' } }, { id: 1e6 + 1, task: { type: 'cut' } });
+    const res = parseSave(JSON.stringify(data));
+    expect(res.ok).toBe(true);
+    expect(res.data.G.ext.drones.slice(-2).map(d => d.task.type)).toEqual(['idle', 'idle']);
+    expect(res.data.G.kits).toBe(1);
+  });
+
   it('rejects saves from before the hallway station layout (format 10 and older)', () => {
     const data = JSON.parse(serialize());
     data.G.v = 10;
