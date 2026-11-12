@@ -47,7 +47,7 @@ export function waitN(n) {
 export function refresh() {
   emit('changed');
 }
-function gridTick() {
+export function gridTick() {
   const jOK = G.mods.map(() => true);
   for (const k of G.machines) if (k.type === 'junc' && k.mi != null && k.cond < 60) jOK[k.mi] = false;
   const src = G.mods.map((m, mi) => mi === 0);
@@ -85,7 +85,7 @@ export const onGrid = m => {
   const md = G.mods[m.mi];
   return !md || md.onGrid !== false;
 };
-function powerTick() {
+export function powerTick() {
   gridTick();
   stressTick();
   let gen = G.allies.filter(a => a.perk === 'grid').length * 5,
@@ -139,7 +139,7 @@ function powerTick() {
       G.hot,
   );
 }
-function atmoTick() {
+export function atmoTick() {
   let capS = 0;
   for (const m of G.machines)
     if ((m.type === 'scrubber' || m.type === 'escrub') && online(m)) capS += MD[m.type].cap;
