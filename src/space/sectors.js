@@ -1095,9 +1095,13 @@ export function activeSweep() {
     R = sweepR();
   let n = 0,
     woke = 0;
+  const found = [];
   for (const s of G.sectors) {
     if (s.id === G.home || sdist(s, h) > R) continue;
-    if (contact(s)) n++;
+    if (contact(s)) {
+      n++;
+      found.push(s.id);
+    }
     if (s.type === 'weapon') {
       const L = G.legacy.find(L => L.sec === s.id);
       if (L && !L.tags.includes(TAGK) && random() < 0.5) {
@@ -1107,7 +1111,7 @@ export function activeSweep() {
     }
     if (s.type === 'rogueai' && random() < 0.6) hunted(s);
   }
-  emit('sweep', { R });
+  emit('sweep', { R, found });
   log(
     `ACTIVE SWEEP: ${n} new contact${n === 1 ? '' : 's'}. Everything in ${Math.round(R * 1400)} km just heard us.${woke ? ` ${woke} dormant platform${woke > 1 ? 's' : ''} lit up a targeting radar.` : ''}`,
     n ? 'good' : 'info',

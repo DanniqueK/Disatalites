@@ -204,15 +204,15 @@ The code is split into a **game core** that knows nothing about the browser, and
 
 ESLint enforces the core boundary: core files cannot import from `ui/`, `actions/` or `main.js`, and only have plain JavaScript globals (no `document`, `window` or `localStorage`). When the core needs the UI to react, it **emits an event** from `core/events.js`. `ui/app.js` subscribes and does the browser work:
 
-| Event     | Payload       | Emitted when                                 | UI reaction                                                                   |
-| --------- | ------------- | -------------------------------------------- | ----------------------------------------------------------------------------- |
-| `changed` |               | `refresh()`: state changed after an action   | Reopen the hack console if needed, redraw panels and map, show queued dialogs |
-| `fx`      | effect object | `addFx`: tracer, explosion                   | Timestamp it and run the animation loop                                       |
-| `hurt`    |               | The player took damage                       | Flash the map red                                                             |
-| `sweep`   | `{ R }`       | Active sensor sweep                          | Draw the sweep ring on ORBIT                                                  |
-| `strike`  | `{ x, y }`    | A legacy satellite or mass driver hits Earth | Strike animation on EARTH                                                     |
-| `tab`     | view name     | A dialog button asks to switch views         | `setTab`                                                                      |
-| `title`   |               | "New game" after death or an ending          | Title screen                                                                  |
+| Event     | Payload        | Emitted when                                 | UI reaction                                                                   |
+| --------- | -------------- | -------------------------------------------- | ----------------------------------------------------------------------------- |
+| `changed` |                | `refresh()`: state changed after an action   | Reopen the hack console if needed, redraw panels and map, show queued dialogs |
+| `fx`      | effect object  | `addFx`: tracer, explosion                   | Timestamp it and run the animation loop                                       |
+| `hurt`    |                | The player took damage                       | Flash the map red                                                             |
+| `sweep`   | `{ R, found }` | Active sensor sweep                          | Draw the sweep ring on ORBIT, revealing `found` contacts as it passes         |
+| `strike`  | `{ x, y }`     | A legacy satellite or mass driver hits Earth | Strike animation on EARTH                                                     |
+| `tab`     | view name      | A dialog button asks to switch views         | `setTab`                                                                      |
+| `title`   |                | "New game" after death or an ending          | Title screen                                                                  |
 
 New features that react to the game (sound, achievements, statistics) should subscribe to these events instead of being called from the core.
 
@@ -330,7 +330,7 @@ Multi-turn actions (wait, repair until done, rest, claim) call `endTurn(true)` i
 - **Station**: tile glyphs with brand-specific wall patterns, pressure-tinted floors, a faint floor tint per room category (`ROOM_CAT`) in rooms you control, room names at each room centre, dimmed remembered tiles, and procedurally drawn fixture art (`FXART`) rotated to face their backing wall. Animated fixtures re-render every 160 ms.
 - **ROOMS overlay** (`V`, `V.rooms`): fills every seen room with its category colour and draws a box with its name, its two most urgent problems from `roomStatus` (`world/rooms.js`: locked, breaches, low air, off the power bus, main machine missing, broken or offline) and its air pressure.
 - **Exterior**: the station is drawn as tiles when zoomed in or as coloured blocks when zoomed out (`extTile`). Also drawn: free port highlights, objects, drones with task lines, and an Earth limb in the background.
-- **Orbit**: a rotating ASCII Earth projected from the surface map, ring boundaries, sensor envelopes, contacts (pulsing `?` for unknown ones), threat lines and drone transfers.
+- **Orbit**: a rotating ASCII Earth projected from the surface map, ring boundaries, sensor envelopes, contacts (pulsing `?` for unknown ones), threat lines and drone transfers. An active sweep draws a ring with a fading trail, and the contacts it found appear as the ring reaches them (the `sweep` event carries `found`). A focused scan draws a line and a closing ring around its target.
 - **Earth**: an equirectangular glyph map with territory, legacy strike boxes, satellites, blinking request targets and strike animations.
 - `drawLabels` places callout labels around targets and avoids overlaps.
 - `kick()` runs a `requestAnimationFrame` loop while effects are active. Orbit and Earth re-render every 400 ms.

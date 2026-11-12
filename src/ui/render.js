@@ -1967,19 +1967,31 @@ function renderOrbit() {
   ctx.arc(sx(h.ox + 0.5), sy(h.oy + 0.5), sweepR() * ts, 0, Math.PI * 2);
   ctx.stroke();
   ctx.setLineDash([]);
+  // Active sweep: a ring with a fading trail. Contacts it found appear as the ring reaches them.
+  let ringR = Infinity;
   if (V.sweep) {
-    const p = (now - V.sweep.t0) / 1800;
+    const p = (now - V.sweep.t0) / 2400;
     if (p >= 1) V.sweep = null;
     else {
-      ctx.strokeStyle = `rgba(255,220,120,${1 - p})`;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(sx(h.ox + 0.5), sy(h.oy + 0.5), V.sweep.R * ts * p, 0, Math.PI * 2);
-      ctx.stroke();
+      ringR = V.sweep.R * p;
+      for (let k = 0; k < 4; k++) {
+        const q = p - k * 0.035;
+        if (q <= 0) break;
+        ctx.strokeStyle = `rgba(255,220,120,${(1 - p) * (1 - k * 0.25)})`;
+        ctx.lineWidth = k ? 1.5 : 3;
+        ctx.beginPath();
+        ctx.arc(sx(h.ox + 0.5), sy(h.oy + 0.5), V.sweep.R * ts * q, 0, Math.PI * 2);
+        ctx.stroke();
+      }
       ctx.lineWidth = 1;
       kick();
     }
   }
+  const notYetSwept = s2 =>
+    V.sweep &&
+    V.sweep.found &&
+    V.sweep.found.includes(s2.id) &&
+    Math.hypot(s2.ox - h.ox, s2.oy - h.oy) > ringR;
   for (const L of G.legacy) {
     if (!(L.aware > G.turn) || L.tags.includes(TAGK)) continue;
     const s2 = G.sectors[L.sec];
@@ -2031,18 +2043,25 @@ function renderOrbit() {
   if (G.fscan) {
     const s2 = G.sectors[G.fscan.sid];
     const [ax, ay] = spos(s2);
-    const ph = (now / 300) % 1;
+    const ph = reducedMotion() ? 0.5 : (now / 300) % 1;
     ctx.strokeStyle = `rgba(176,138,255,${0.4 + 0.4 * ph})`;
     ctx.beginPath();
     ctx.moveTo(sx(h.ox + 0.5), sy(h.oy + 0.5));
     ctx.lineTo(sx(ax + 0.5), sy(ay + 0.5));
     ctx.stroke();
-    kick();
+    // Focused scan: a ring that closes in on the target.
+    ctx.strokeStyle = `rgba(176,138,255,${0.9 - 0.6 * ph})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(sx(ax + 0.5), sy(ay + 0.5), ts * (1 + 2.5 * (1 - ph)), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    if (!reducedMotion()) kick();
   }
   const pulse = reducedMotion() ? 1 : 0.55 + 0.45 * Math.sin(now / 350);
   for (const s2 of G.sectors) {
     const D = det(s2);
-    if (!D) continue;
+    if (!D || notYetSwept(s2)) continue;
     const [ax, ay] = spos(s2);
     const px = sx(ax) + ts / 2,
       py = sy(ay) + ts / 2;
@@ -2124,7 +2143,7 @@ function renderOrbit() {
     const L = [];
     for (const s2 of G.sectors) {
       const D = det(s2);
-      if (!D) continue;
+      if (!D || notYetSwept(s2)) continue;
       if (ts < 6 && s2.id !== G.home && s2.id !== V.osel) continue;
       const [ax, ay] = spos(s2);
       if (D === 1) L.push({ x: ax, y: ay, t: `${cid(s2)} · UNKNOWN`, bg: '#e0b020', fg: '#000' });
