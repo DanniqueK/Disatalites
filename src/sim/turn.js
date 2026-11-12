@@ -17,7 +17,7 @@ import { watchTick } from './watch.js';
 import { allyTick, crewTick, HULL } from '../space/sectors.js';
 import { modIndex, removeBreach } from '../world/build.js';
 import { bfsInt, fov, intNext, los, pressureAt } from '../world/fov.js';
-import { addStock, commsOnline, ctlOK, dropNear, online } from '../world/machines.js';
+import { addStock, commsOnline, ctlOK, dropNear, hasOnline, online } from '../world/machines.js';
 
 export function endTurn(quiet) {
   G.turn++;
@@ -202,6 +202,24 @@ function needsTick() {
     G.killer = 'starvation';
     if (G.turn % 10 === 0) log('Starving. Find rations.', 'bad');
   }
+  P.hyd = (P.hyd ?? 80) - 0.25;
+  if (P.hyd <= 25 && G.stock.water > 0) {
+    drinkWater();
+    P.hyd = Math.min(100, P.hyd + 40);
+    log('You drink from the water ration.', 'info');
+  }
+  if (P.hyd <= 0) {
+    P.hyd = 0;
+    P.hp -= 0.5;
+    G.killer = 'dehydration';
+    if (G.turn % 10 === 0)
+      log('Dehydrated. Find water: ice in debris, supply pods, or a Water Reclaimer.', 'bad');
+  }
+}
+/** Use one unit of water; a running Water Reclaimer recovers most of it. */
+export function drinkWater() {
+  G.stock.water--;
+  if (hasOnline('reclaim') && random() < 0.7) G.stock.water++;
 }
 function machineTick() {
   for (const m of G.machines) {
@@ -211,8 +229,16 @@ function machineTick() {
     if (m.type === 'hydro' && on) {
       m.prog += (G.crew || []).some(c => c.role === 'botanist' && c.duty && c.at === m.id) ? 2 : 1;
       if (m.prog >= 20) {
-        m.prog = 0;
-        addStock('rat', 2);
+        if (G.stock.water < 1) {
+          m.prog = 20;
+          if (!m.dry) log('Hydroponics is dry: the vats need water to grow rations.', 'warn');
+          m.dry = true;
+        } else {
+          m.prog = 0;
+          m.dry = false;
+          G.stock.water--;
+          addStock('rat', 2);
+        }
       }
     }
     if (m.type === 'refinery' && on && G.stock.scrap >= 2) {

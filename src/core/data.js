@@ -99,6 +99,15 @@ export const MD = {
     bat: 160,
     desc: 'Stores surplus power. +160 capacity while repaired.',
   },
+  reclaim: {
+    n: 'Water Reclaimer',
+    g: 'w',
+    c: '#4aa8ff',
+    use: 2,
+    pri: 2,
+    tech: 1,
+    desc: 'Recycles waste water. While it runs, most of the water you and the crew drink comes back.',
+  },
   escrub: {
     n: 'Emergency Scrubber',
     g: '%',
@@ -289,6 +298,7 @@ export const MC = {
   refinery: [18, 6, 16],
   med: [14, 8, 12],
   bunk: [4, 0, 4],
+  reclaim: [10, 4, 10],
   defense: [16, 6, 14],
   driver: [40, 16, 30],
   thruster: [24, 10, 20],
@@ -393,7 +403,7 @@ export const FX = {
     ],
   },
 };
-export const SMALL = ['locker', 'bunk', 'escrub', 'turret'];
+export const SMALL = ['locker', 'bunk', 'escrub', 'turret', 'reclaim'];
 /**
  * Standard room footprints (floor tiles, without walls). Rooms are rectangles with a door centred on
  * each long side; the shape grid adds a one-tile wall around the floor.
@@ -426,7 +436,7 @@ export const FN = {
   junction: { n: 'Rack Room', m: ['rack', 'escrub'], sz: 'S', cat: 'drones' },
   power: { n: 'Power Core', m: ['reactor', 'battery'], sz: 'M', cat: 'power' },
   storage: { n: 'Storage', m: ['locker'], sz: 'S', cat: 'cargo' },
-  life: { n: 'Life Support', m: ['scrubber'], sz: 'S', cat: 'life' },
+  life: { n: 'Life Support', m: ['scrubber', 'reclaim'], sz: 'S', cat: 'life' },
   workshop: { n: 'Workshop', m: ['fab', 'terminal'], sz: 'M', cat: 'eng' },
   comms: { n: 'Comms', m: ['comms'], sz: 'S', cat: 'signals' },
   dock: { n: 'Drone Bay', m: ['rack', 'rack'], sz: 'M', cat: 'drones' },
@@ -456,6 +466,7 @@ export const isHall = fn => !!(FN[fn] && FN[fn].hall);
 export const GEAR_ROOMS = {
   locker: ['storage', 'cargo', 'workshop'],
   bunk: ['hab', 'medbay'],
+  reclaim: ['life', 'hydro', 'hab'],
   escrub: '*',
   turret: '*',
 };

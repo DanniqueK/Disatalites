@@ -82,7 +82,7 @@ function genReq(fi) {
   G.intr = true;
 }
 function podFor(f) {
-  const c = { scrap: 0, circ: 0, rat: 0, ammo: 0, items: [] };
+  const c = { scrap: 0, circ: 0, rat: 0, water: 0, ammo: 0, items: [] };
   if (f === 0) {
     c.circ = rr(8, 14);
     c.scrap = rr(4, 8);
@@ -95,12 +95,14 @@ function podFor(f) {
   }
   if (f === 2) {
     c.rat = rr(5, 9);
+    c.water = rr(4, 8);
     c.scrap = rr(4, 8);
     if (random() < 0.6) c.items.push('medkit');
   }
   if (f === 3) {
     c.scrap = rr(10, 16);
     c.circ = rr(4, 8);
+    c.water = rr(6, 10);
     if (random() < 0.5) c.items.push(pick(['magboots', 'liner', 'dorm_util', 'dorm_tug']));
   }
   return c;

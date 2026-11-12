@@ -35,6 +35,7 @@ export function salvageEstimate(o, d) {
     if (c.scrap) parts.push(`${amt(c.scrap)} scrap`);
     if (c.circ) parts.push(`${amt(c.circ)} circuit${exact && c.circ === 1 ? '' : 's'}`);
     if (c.rat) parts.push(`${amt(c.rat)} ration${exact && c.rat === 1 ? '' : 's'}`);
+    if (c.water) parts.push(`${amt(c.water)} water (ice)`);
     if (c.ammo) parts.push(`${amt(c.ammo)} ammo`);
     if (parts.length) loot.push((label ? label + ': ' : '') + parts.join(', '));
   };

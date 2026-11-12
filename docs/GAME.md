@@ -23,7 +23,7 @@ Main features:
 - **Two starts**: a misfiring clone pod (70 body, you can be re-grown on death) or cryo (100 body, worn pistol and armor, one life).
 - **Hallway station**: 3-wide hallways and a central junction hub, with standard-size rooms (one job each) docked only onto hallway doors. Rooms come from seven makers (brands) with their own colours and wall pattern. The generator keeps the station compact.
 - **Section claiming**: each section runs its own Grid Node. Until you repair and claim it, the section gets no power or air and its machines refuse you.
-- **Power, air and survival**: a power bus with junction boxes, generators, batteries and brownouts. Pressure per section, hull breaches, suit O2, nutrition and rations.
+- **Power, air and survival**: a power bus with junction boxes, generators, batteries and brownouts. Pressure per section, hull breaches, suit O2, nutrition and rations, hydration and water.
 - **Machines**: repair, switch on and off, use, uninstall into kits, or strip for parts. Large built-in fixtures, and small gear you can place freely inside rooms.
 - **Readable map**: rooms are colour coded by job (crew, power, life support, cargo, engineering, drones, signals, defense) and the ROOMS overlay shows what each room needs.
 - **Gear and combat**: tool, weapon and suit slots, an inventory of 8, melee and ranged combat with hit chances, and damage spread over your body and every equipped part.
@@ -78,7 +78,7 @@ Always visible: LOG and COMBAT scroll panels, STATUS bars (body, suit O2, nutrit
 - **Small gear** (`SMALL`: storage rack, bunk, emergency scrubber, hull turret) can be uninstalled into a kit and installed on any free floor tile next to you (`world/placement.js`). `placeProblem` refuses hallways, rooms you do not control, rooms the gear does not belong in (`GEAR_ROOMS`: storage racks in Storage, Cargo and the Workshop, bunks in a Hab Module or Med Bay, emergency scrubbers anywhere), tiles next to a door, and anything that would cut the room's straight (4-way) walkway. Hull turrets go on an outer wall of the room. There are no mount pads or empty hardpoints.
 - Repairs cost 2 scrap (plus 1 circuit for tech machines) and add the repair value of your best tool.
 - Tech machines slowly wear while online.
-- Notable machines: Fusion Reactor (+10 power), Solar Controller (+8), Battery Bank (+160 capacity), scrubbers (air capacity per floor tile), Clone Pod (re-grow), Drone Rack (3 drones each), Fabricator, Comms Array, Sensor Array, Launch Rail, Maintenance Dock (repair bot), Refinery (scrap to circuits), Hydroponics (rations), Med Pod, Point Defense, Hull Turret, Mass Driver, Ion Drive.
+- Notable machines: Fusion Reactor (+10 power), Solar Controller (+8), Battery Bank (+160 capacity), scrubbers (air capacity per floor tile), Clone Pod (re-grow), Drone Rack (3 drones each), Fabricator, Comms Array, Sensor Array, Launch Rail, Maintenance Dock (repair bot), Refinery (scrap to circuits), Hydroponics (rations, uses water), Water Reclaimer (recycles drinking water), Med Pod, Point Defense, Hull Turret, Mass Driver, Ion Drive.
 
 ### Power and air
 
@@ -86,7 +86,8 @@ Always visible: LOG and COMBAT scroll panels, STATUS bars (body, suit O2, nutrit
 - `powerTick` adds up generation, sorts consumers by priority (`pri`), powers them from supply and then from the battery, and logs brownouts. It also computes the signature.
 - **Eclipse** (`sim/eclipse.js`): the home orbit passes through Earth's shadow once per lap. `SUN` gives the lap length and shadow share per band (LEO 90 turns, 38% dark; MEO 240, 20%; GEO 720, 6%; HEO 960, 10%). Solar Controllers make nothing in the shadow. A station with solar power gets a warning 5 turns before (`ECLIPSE_WARNING`), and a note when the sun returns. The STATUS panel shows the band, SUN or ECLIPSE, and turns until the next change.
 - `atmoTick` gives each controlled section pressure from scrubber capacity divided by the total controlled floor area. Breached sections lose 25 pressure per turn.
-- `needsTick`: below 35% pressure your suit O2 drains (halved by a Hazard Liner). At 0 O2 you lose body. Nutrition drops over time, and you eat rations automatically when low.
+- `needsTick`: below 35% pressure your suit O2 drains (halved by a Hazard Liner). At 0 O2 you lose body. Nutrition drops over time, and you eat rations automatically when low. Hydration drops 0.25 per turn; at 25 or below you drink one water (+40). At 0 you lose body (`dehydration`).
+- **Water** (`G.stock.water`, storage cap `20 + 15 * level`): new stations start with 12. Sources: ice in debris (some pieces carry 2-6 water, shown in the salvage estimate), supply pods, and the Water Reclaimer in Life Support, which returns a drunk unit 70% of the time while it runs (`drinkWater`). Crew drink about one unit per 20 crew-turns; with no water they starve faster. Hydroponics needs one water per harvest of 2 rations and stops with a warning when dry.
 
 ### Gear and combat
 

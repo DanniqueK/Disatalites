@@ -33,7 +33,7 @@ export function newGame(start, seed = newSeed()) {
     actors: [],
     bot: null,
     bat: 30,
-    stock: { scrap: 0, circ: 0, rat: 1, ammo: start === 'cryo' ? 12 : 0 },
+    stock: { scrap: 0, circ: 0, rat: 1, water: 12, ammo: start === 'cryo' ? 12 : 0 },
     sats: { COMMS: 0, WEATHER: 0, NAV: 0, RECON: 0 },
     kits: 0,
     bp: {
@@ -105,6 +105,7 @@ export function newGame(start, seed = newSeed()) {
     hpMax: start === 'clone' ? 70 : 100,
     o2: 100,
     nut: 75,
+    hyd: 80,
     eq: {
       tool: [mk('multitool', 0.7)],
       weap: start === 'cryo' ? [mk('pistol', 0.8)] : [],

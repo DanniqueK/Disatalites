@@ -93,20 +93,19 @@ export const atHatch = d => {
   const h = hatchOf(d);
   return h && d.x === h[0] && d.y === h[1];
 };
-export const cargoLoad = d => d.cargo.scrap + d.cargo.circ + d.cargo.rat;
+const RES = ['scrap', 'circ', 'rat', 'water'];
+export const cargoLoad = d => RES.reduce((n, k) => n + (d.cargo[k] || 0), 0);
 function deposit(d) {
   const c = d.cargo,
     n = cargoLoad(d);
   if (n) {
-    addStock('scrap', c.scrap);
-    addStock('circ', c.circ);
-    addStock('rat', c.rat);
+    for (const k of RES) if (c[k]) addStock(k, c[k]);
     G.stat.salvaged += n;
     log(
-      `${d.name} unloads: ${c.scrap} scrap, ${c.circ} circuits${c.rat ? ', ' + c.rat + ' rations' : ''}.`,
+      `${d.name} unloads: ${c.scrap} scrap, ${c.circ} circuits${c.rat ? ', ' + c.rat + ' rations' : ''}${c.water ? ', ' + c.water + ' water (ice)' : ''}.`,
       'good',
     );
-    d.cargo = { scrap: 0, circ: 0, rat: 0 };
+    d.cargo = { scrap: 0, circ: 0, rat: 0, water: 0 };
   }
   if (d.pod) {
     const p = d.pod;
@@ -122,12 +121,12 @@ function deposit(d) {
         'good',
       );
     } else {
-      ['scrap', 'circ', 'rat', 'ammo'].forEach(k => {
+      ['scrap', 'circ', 'rat', 'water', 'ammo'].forEach(k => {
         if (p[k]) addStock(k, p[k]);
       });
       for (const it of p.items || []) dropNear(rack.x, rack.y, mk(it));
       log(
-        `Supply pod opened: ${['scrap', 'circ', 'rat', 'ammo']
+        `Supply pod opened: ${['scrap', 'circ', 'rat', 'water', 'ammo']
           .filter(k => p[k])
           .map(k => p[k] + ' ' + { scrap: 'scrap', circ: 'circuits', rat: 'rations', ammo: 'ammo' }[k])
           .join(
@@ -141,13 +140,13 @@ function deposit(d) {
 }
 function mine(d, o) {
   for (let k = 0; k < 2; k++) {
-    const ks = ['scrap', 'circ', 'rat'].filter(q => o.res[q] > 0);
+    const ks = RES.filter(q => o.res[q] > 0);
     if (!ks.length || cargoLoad(d) >= DT[d.dt].cargo) break;
     const q = pick(ks);
     o.res[q]--;
-    d.cargo[q]++;
+    d.cargo[q] = (d.cargo[q] || 0) + 1;
   }
-  if (!['scrap', 'circ', 'rat'].some(q => o.res[q] > 0)) removeObj(o);
+  if (!RES.some(q => o.res[q] > 0)) removeObj(o);
 }
 export function killDrone(d, by) {
   log(`${d.name} destroyed${by ? ' by ' + by : ''}.`, 'bad');
