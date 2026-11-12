@@ -15,7 +15,7 @@ npx serve .
 
 Then open the printed URL. VS Code's Live Server extension works too.
 
-To host it, enable GitHub Pages for this repository (Settings > Pages > deploy from the `main` branch, root folder).
+Every push to `main` is deployed to GitHub Pages by `.github/workflows/pages.yml` (Settings > Pages > Source must be "GitHub Actions"). The workflow runs all checks, then `scripts/build-site.mjs` packages the site with the modules under a folder named after the commit, so a browser never mixes cached modules from an old deploy with new ones.
 
 ## Controls
 
@@ -39,7 +39,7 @@ npm run check   # format check, lint, type check and tests, the same as CI
 | `npm run format`    | Format everything with Prettier                            |
 | `npm run lint`      | ESLint                                                     |
 | `npm run typecheck` | TypeScript checks the JavaScript (`checkJs`) and its JSDoc |
-| `npm test`          | Unit tests with Vitest (`test/`)                           |
+| `npm test`          | Unit tests with Vitest (`test/`)                           | `n  | `npm run site` | Package the site for hosting into `_site/` (what Pages serves) |
 
 CI (`.github/workflows/ci.yml`) runs `format:check`, `lint`, `typecheck` and `test` on every pull request and push to `main`.
 
