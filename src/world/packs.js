@@ -1,8 +1,11 @@
-import { BR, BRANDS, EN, FN, FX, mk, XTRA } from '../core/data.js';
+import { BRANDS, EN, FN, FX, isHall, mk, XTRA } from '../core/data.js';
 import { random } from '../core/rng.js';
-import { cheb, D4, D8, pick, rnd, rr, shuffle } from '../core/util.js';
-import { cloneShape, genShape, setCell, shapeFloors } from './shapes.js';
+import { cheb, D4, pick, rnd, rr, shuffle } from '../core/util.js';
+import { cloneShape, hallShape, roomShape, setCell, shapeFloors } from './shapes.js';
 
+const NEXT_SIZE = { S: 'M', M: 'L' };
+
+// Walkway rule: every free floor tile stays reachable with straight (4-way) moves.
 function shapeFloodOk(sh, blocked) {
   const fl = shapeFloors(sh).filter(([x, y]) => !blocked.has(x + ',' + y));
   if (!fl.length) return false;
@@ -11,7 +14,7 @@ function shapeFloodOk(sh, blocked) {
     seen = new Set([fl[0].join(',')]);
   while (st.length) {
     const [x, y] = st.pop();
-    for (const [dx, dy] of D8) {
+    for (const [dx, dy] of D4) {
       const k = x + dx + ',' + (y + dy);
       if (set.has(k) && !seen.has(k)) {
         seen.add(k);
@@ -34,13 +37,19 @@ export function makePack(fn, brand, opts) {
         setCell(sh, p.x, p.y, 'P');
       }
     });
+  } else if (isHall(fn)) {
+    sh = hallShape(fn === 'hub' ? 'hub' : 'hall');
   } else {
-    const need = f.m.reduce((a, t) => a + (FX[t] ? FX[t].s[0][0] * FX[t].s[0][1] * 2 : 2), 0) + 10;
-    for (let k = 0; k < 40; k++) {
-      sh = genShape(fn === 'tube' ? 'truss' : pick(BR[brand].shapes));
-      if (shapeFloors(sh).length >= need || fn === 'tube') break;
-    }
+    sh = roomShape(opts.size || f.sz || 'S');
   }
+  // Retry machine placement a few times, then grow the room to the next standard size.
+  const retry = () => {
+    const n = (opts._try || 0) + 1;
+    const size = opts.size || f.sz || 'S';
+    if (n < 12) return makePack(fn, brand, { ...opts, _try: n });
+    if (NEXT_SIZE[size]) return makePack(fn, brand, { ...opts, size: NEXT_SIZE[size], _try: 0 });
+    return null;
+  };
   const pack = {
     fn,
     brand,
@@ -64,10 +73,10 @@ export function makePack(fn, brand, opts) {
   else if (fill !== 'shell') {
     const P1 = fill === 'station' ? 0.8 : 0.55;
     for (const t of smalls) if (random() < P1) want.push(t);
-    if (fn !== 'tube' && random() < (fill === 'station' ? 0.45 : 0.3))
+    if (!isHall(fn) && random() < (fill === 'station' ? 0.45 : 0.3))
       want.push(pick(XTRA[opts.kind] || XTRA.any));
   }
-  const nMount = fn === 'tube' ? 0 : want.length + rr(1, 2);
+  const nMount = isHall(fn) ? 0 : want.length + rr(1, 2);
   const condOf = t => {
     if (opts.cond) return opts.cond(t);
     if (fill === 'shell') return FX[t] ? rr(25, 40) : 100;
@@ -156,8 +165,10 @@ export function makePack(fn, brand, opts) {
         prog: 0,
       });
     }
-    if (failed && !opts.shape && (opts._try || 0) < 25)
-      return makePack(fn, brand, { ...opts, _try: (opts._try || 0) + 1 });
+    if (failed && !opts.shape) {
+      const again = retry();
+      if (again) return again;
+    }
   }
   const front = new Set();
   {
@@ -186,7 +197,7 @@ export function makePack(fn, brand, opts) {
       return o[0];
     };
     const cnd = t => (opts.cond ? opts.cond(t) : rr(10, 40));
-    if (fn !== 'tube') {
+    if (!isHall(fn)) {
       const w = spots((pd, side) => (pd <= 2 ? null : side * 2));
       const w2 = w || spots((pd, side) => (pd < 1 ? null : side * 2 - (pd <= 2 ? 6 : 0))) || spots(() => 0);
       if (w2) {
@@ -243,11 +254,13 @@ export function makePack(fn, brand, opts) {
         prog: 0,
       });
     }
-    if (fill === 'set' && wi < want.length && !opts.shape && (opts._try || 0) < 25)
-      return makePack(fn, brand, { ...opts, _try: (opts._try || 0) + 1 });
+    if (fill === 'set' && wi < want.length && !opts.shape) {
+      const again = retry();
+      if (again) return again;
+    }
 
     // hardpoints: straight outer wall cells facing space
-    if (fn !== 'tube') {
+    if (!isHall(fn)) {
       const hc = [];
       for (let y = 0; y < sh.h; y++)
         for (let x = 0; x < sh.w; x++) {
@@ -309,7 +322,7 @@ export function makePack(fn, brand, opts) {
         if ((nb.includes(' ') || nb.includes(undefined)) && !pack.mach.some(m => m.lx === x && m.ly === y))
           walls.push([x, y]);
       }
-  const nw = fn === 'tube' ? 0 : rr(0, 2);
+  const nw = isHall(fn) ? rr(0, 1) : rr(0, 2);
   for (let k = 0; k < nw && walls.length; k++) pack.wins.push(pick(walls));
   return pack;
 }

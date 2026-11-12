@@ -1,10 +1,8 @@
 import { T, WALK, WH, WW } from '../core/constants.js';
-import { BR, EN } from '../core/data.js';
+import { BR, EN, isHall } from '../core/data.js';
 import { log } from '../core/messages.js';
-import { random } from '../core/rng.js';
 import { G, M, P } from '../core/state.js';
 import { cheb, D4, D8, dirName, idx, inB, pick } from '../core/util.js';
-import { addFx } from '../sim/stats.js';
 import { HULL } from '../space/sectors.js';
 import { online } from './machines.js';
 import { cloneShape, portWorld, rotD, rotDims, rotP, setCell, toLocal, toWorld } from './shapes.js';
@@ -217,9 +215,12 @@ export function freePorts(any) {
   );
   return o;
 }
+/** Ways `pack` can dock at free port `fp`. Rooms only dock onto corridor pieces, never onto other rooms. */
 export function fitsAt(pack, fp) {
   const res = [],
     sh = pack.shape;
+  const target = fp && modById(fp.mid);
+  if (target && !isHall(pack.fn) && !isHall(target.fn)) return res;
   for (let rot = 0; rot < 4; rot++) {
     const [rw, rh] = rotDims(sh, rot);
     sh.ports.forEach((p, pi) => {
@@ -435,131 +436,6 @@ export function doSeal(m, pi) {
   setCell(m.shape, p.x, p.y, '#');
   rebuildMap();
   return true;
-}
-const linkBr = (m, pi) => (m.links[pi] && m.links[pi].br) || 0;
-export function setBrace(m, pi) {
-  const l = m.links[pi];
-  if (!l) return;
-  l.br = (l.br || 0) + 1;
-  const o = modById(l.mod);
-  if (o && o.links[l.pi]) o.links[l.pi].br = l.br;
-}
-const modMass = m =>
-  m.shape.g.join('').split('.').length -
-  1 +
-  G.machines.filter(k => k.mod === m.id && k.type !== 'mount' && !k.wall).length * 4;
-const JCAP = b => 110 + 80 * b;
-export function jointLoads() {
-  const n = G.mods.length,
-    idOf = {};
-  G.mods.forEach((m, i) => (idOf[m.id] = i));
-  const edges = [];
-  G.mods.forEach((m, i) => {
-    for (const [pi, l] of Object.entries(m.links)) {
-      const j = idOf[l.mod];
-      if (j == null || j < i) continue;
-      edges.push({ a: i, b: j, pa: +pi, pb: l.pi });
-    }
-  });
-  const adj = G.mods.map(() => []);
-  edges.forEach((e, k) => {
-    adj[e.a].push([e.b, k]);
-    adj[e.b].push([e.a, k]);
-  });
-  const disc = new Array(n).fill(-1),
-    low = new Array(n).fill(0),
-    par = new Array(n).fill(-1),
-    sub = new Array(n).fill(0),
-    mass = G.mods.map(modMass);
-  let t = 0;
-  const bridge = new Set();
-  const order = [];
-  const dfs = (u, pe) => {
-    disc[u] = low[u] = t++;
-    order.push(u);
-    sub[u] = mass[u];
-    for (const [v, k] of adj[u]) {
-      if (k === pe) continue;
-      if (disc[v] < 0) {
-        par[v] = u;
-        dfs(v, k);
-        sub[u] += sub[v];
-        low[u] = Math.min(low[u], low[v]);
-        if (low[v] > disc[u]) bridge.add(k);
-      } else low[u] = Math.min(low[u], disc[v]);
-    }
-  };
-  if (n) dfs(0, -1);
-  const mv = G.move ? 1.5 : 1;
-  return edges.map((e, k) => {
-    const ma = G.mods[e.a];
-    let load = 0,
-      child = -1;
-    if (bridge.has(k)) {
-      child = par[e.b] === e.a ? e.b : e.a;
-      load = Math.round(sub[child] * mv);
-    }
-    const br = linkBr(ma, e.pa),
-      w = portWorld(ma, e.pa);
-    return { ...e, load, cap: JCAP(br), br, child, x: w.x, y: w.y, loop: !bridge.has(k) };
-  });
-}
-function addBreachAt(mi, x, y) {
-  const m = G.mods[mi];
-  if (!m) return null;
-  let best = null,
-    bd = 1e9;
-  for (const cell of modCells(m)) {
-    if (cell.c !== '#') continue;
-    const t = M.map[idx(cell.x, cell.y)];
-    if (t !== T.WALL && t !== T.WINDOW) continue;
-    if (
-      !D4.some(([dx, dy]) => inB(cell.x + dx, cell.y + dy) && M.map[idx(cell.x + dx, cell.y + dy)] === T.VOID)
-    )
-      continue;
-    const d = Math.hypot(cell.x - x, cell.y - y);
-    if (d < bd) {
-      bd = d;
-      best = cell;
-    }
-  }
-  if (!best) return addBreachMod(mi);
-  const b = { id: G.nid++, lx: best.lx, ly: best.ly };
-  m.breaches.push(b);
-  rebuildMap();
-  return b;
-}
-export function stressTick() {
-  G.joints = jointLoads();
-  if (G.turn % 10) return;
-  for (const j of G.joints) {
-    if (!j.load) continue;
-    const r = j.load / j.cap;
-    if (r <= 1) continue;
-    if (random() < Math.min(0.5, (r - 1) * 0.35)) {
-      const ch = G.mods[j.child];
-      if (!ch) continue;
-      const ci = j.child;
-      if (r > 2.2 && Object.keys(ch.links).length === 1 && canDetach(ci) === null && random() < 0.4) {
-        const { pack, cx, cy } = packModule(ci);
-        pack.redock = true;
-        G.ext.objs.push({ id: G.nid++, sec: HULL, kind: 'der', x: cx, y: cy, pack, tow: null });
-        log(
-          `JOINT FAILURE: the ${pack.name} shears off the station and tumbles free. A tug can bring it back.`,
-          'bad',
-        );
-        return;
-      }
-      addBreachAt(ci, j.x, j.y);
-      const jb = G.machines.find(k => k.type === 'junc' && k.mod === ch.id);
-      if (jb) jb.cond = Math.max(0, jb.cond - 15);
-      log(
-        `The joint to the ${ch.name} cracks under load (${j.load}/${j.cap}). Hull breach. Brace it or add a second connection to spread the load.`,
-        'bad',
-      );
-      addFx({ k: 'boom', x: j.x, y: j.y, dur: 400, view: 'ext' });
-    }
-  }
 }
 /* tube planner: path from a free port to open space or to another free port */
 export function planTube(fp, tx, ty) {

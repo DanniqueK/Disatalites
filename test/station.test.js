@@ -1,11 +1,34 @@
 import { describe, expect, it } from 'vitest';
-import { T, WALK } from '../src/core/constants.js';
+import { T, WALK, WW } from '../src/core/constants.js';
+import { FN, isHall, ROOM_SIZE } from '../src/core/data.js';
 import { G, M, P } from '../src/core/state.js';
-import { D8, idx, inB } from '../src/core/util.js';
+import { D4, idx, inB } from '../src/core/util.js';
 import { modCells } from '../src/world/build.js';
 import { game } from './helpers.js';
 
 const SEEDS = Array.from({ length: 30 }, (_, i) => i + 1);
+
+function reachableFrom(x, y, steps) {
+  const seen = new Uint8Array(M.map.length);
+  const st = [idx(x, y)];
+  seen[st[0]] = 1;
+  while (st.length) {
+    const i = st.pop();
+    const cx = i % WW,
+      cy = (i / WW) | 0;
+    for (const [dx, dy] of steps) {
+      const nx = cx + dx,
+        ny = cy + dy;
+      if (!inB(nx, ny)) continue;
+      const j = idx(nx, ny);
+      if (!seen[j] && WALK.has(M.map[j])) {
+        seen[j] = 1;
+        st.push(j);
+      }
+    }
+  }
+  return seen;
+}
 
 describe.each(SEEDS)('starting station, seed %i', seed => {
   it('sections do not overlap and links are two-way', () => {
@@ -13,11 +36,8 @@ describe.each(SEEDS)('starting station, seed %i', seed => {
     const owner = new Map();
     for (const m of G.mods)
       for (const c of modCells(m)) {
-        if (c.c === ' ') continue;
         const k = idx(c.x, c.y);
-        const prev = owner.get(k);
-        // Linked ports share their doorway tile; anything else is an overlap.
-        if (prev != null && prev !== m.id) expect(c.c, `overlap at ${c.x},${c.y}`).toBe('P');
+        expect(owner.has(k), `${m.name} overlaps another section at ${c.x},${c.y}`).toBe(false);
         owner.set(k, m.id);
       }
     for (const m of G.mods)
@@ -29,40 +49,55 @@ describe.each(SEEDS)('starting station, seed %i', seed => {
       }
   });
 
-  it('every floor tile can be reached from where the player wakes up (8-way moves)', () => {
+  it('rooms only connect to hallways, and every room is a standard size', () => {
+    game(seed);
+    for (const m of G.mods) {
+      if (isHall(m.fn)) continue;
+      for (const l of Object.values(m.links)) {
+        const o = G.mods.find(x => x.id === l.mod);
+        expect(isHall(o.fn), `${m.name} is docked to ${o.name}, a room`).toBe(true);
+      }
+      const fl = [m.shape.w - 2, m.shape.h - 2].sort().join('x');
+      expect(Object.values(ROOM_SIZE).map(s => [...s].sort().join('x'))).toContain(fl);
+      expect(FN[m.fn].sz).toBeTruthy();
+    }
+  });
+
+  it('every floor tile is reachable with straight moves from where the player wakes up', () => {
     game(seed);
     expect(WALK.has(M.map[idx(P.x, P.y)])).toBe(true);
-    const seen = new Uint8Array(M.map.length);
-    const st = [idx(P.x, P.y)];
-    seen[st[0]] = 1;
-    while (st.length) {
-      const i = st.pop();
-      const x = i % 144,
-        y = (i / 144) | 0;
-      for (const [dx, dy] of D8) {
-        const nx = x + dx,
-          ny = y + dy;
-        if (!inB(nx, ny)) continue;
-        const j = idx(nx, ny);
-        if (!seen[j] && WALK.has(M.map[j])) {
-          seen[j] = 1;
-          st.push(j);
-        }
-      }
-    }
+    const seen = reachableFrom(P.x, P.y, D4);
     const unreachable = [];
     for (let i = 0; i < M.map.length; i++)
-      if (M.map[i] === T.FLOOR && !seen[i]) unreachable.push(`${i % 144},${(i / 144) | 0}`);
+      if (M.map[i] === T.FLOOR && !seen[i]) unreachable.push(`${i % WW},${(i / WW) | 0}`);
     expect(unreachable).toEqual([]);
   });
 
-  it('every section has exactly one grid node and the pod section is yours', () => {
+  it('is compact: the whole station fits in a 45 x 45 box', () => {
+    game(seed);
+    let x0 = WW,
+      y0 = WW,
+      x1 = 0,
+      y1 = 0;
+    for (let i = 0; i < M.map.length; i++)
+      if (M.map[i] !== T.VOID) {
+        const x = i % WW,
+          y = (i / WW) | 0;
+        x0 = Math.min(x0, x);
+        x1 = Math.max(x1, x);
+        y0 = Math.min(y0, y);
+        y1 = Math.max(y1, y);
+      }
+    expect(x1 - x0 + 1).toBeLessThanOrEqual(45);
+    expect(y1 - y0 + 1).toBeLessThanOrEqual(45);
+  });
+
+  it('rooms have one grid node, hallways none, and only the pod room and hallways start yours', () => {
     game(seed);
     for (const [mi, m] of G.mods.entries()) {
       const nodes = G.machines.filter(k => k.mi === mi && k.type === 'node');
-      expect(nodes, `${m.name} grid nodes`).toHaveLength(m.fn === 'tube' ? nodes.length : 1);
+      expect(nodes, `${m.name} grid nodes`).toHaveLength(isHall(m.fn) ? 0 : 1);
+      expect(m.ctl, `${m.name} control`).toBe(isHall(m.fn) || m.fn.startsWith('pod_'));
     }
-    expect(G.mods[0].ctl).toBe(true);
-    expect(G.mods.slice(1).every(m => !m.ctl || m.fn === 'tube')).toBe(true);
   });
 });
