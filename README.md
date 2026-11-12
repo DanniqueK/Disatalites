@@ -26,4 +26,4 @@ To host it, enable GitHub Pages for this repository (Settings > Pages > deploy f
 
 ## Documentation
 
-See [docs/GAME.md](docs/GAME.md) for a full feature list and a walkthrough of how `index.html` works.
+See [docs/GAME.md](docs/GAME.md) for a full feature list and a walkthrough of how the code in `src/` works.
