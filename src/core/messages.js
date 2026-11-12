@@ -1,3 +1,4 @@
+import { emit } from './events.js';
 import { G, V } from './state.js';
 
 /** @typedef {import('./types.js').ModalButton} ModalButton */
@@ -11,6 +12,7 @@ export function log(m, c) {
   G.log.push({ n: G.turn, m, c: c || '' });
   if (G.log.length > 150) G.log.shift();
   if (c === 'bad' || c === 'warn') G.intr = true;
+  emit('log', { m, c: c || '' });
 }
 
 /**

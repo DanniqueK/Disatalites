@@ -214,6 +214,7 @@ ESLint enforces the core boundary: core files cannot import from `ui/`, `actions
 | `sweep`   | `{ R, found }` | Active sensor sweep                          | Draw the sweep ring on ORBIT, revealing `found` contacts as it passes         |
 | `strike`  | `{ x, y }`     | A legacy satellite or mass driver hits Earth | Strike animation on EARTH                                                     |
 | `tab`     | view name      | A dialog button asks to switch views         | `setTab`                                                                      |
+| `log`     | `{ m, c }`     | A log line was added                         | Sound: alarm for `bad`, chime for `good`                                      |
 | `title`   |                | "New game" after death or an ending          | Title screen                                                                  |
 
 New features that react to the game (sound, achievements, statistics) should subscribe to these events instead of being called from the core.
@@ -345,7 +346,8 @@ Multi-turn actions (wait, repair until done, rest, claim) call `endTurn(true)` i
 - Side panel clicks are delegated through `data-*` attributes (`data-a` pad actions, `data-m` machines, `data-d` drones, `data-sec` sectors, `data-rq` requests, and so on).
 - Canvas pointer events tell a tap from a drag (10 px threshold). A tap goes to `stationTap`, `extTap`, `orbitTapAt` or the Earth cell description.
 - WASD keys are buffered for 45 ms so two held keys make a diagonal step.
-- **Settings** (title and help screens, `ui/settings.js`): text size (zooms panels and dialogs, not the map canvas, so tapping the map stays accurate), map tile size in the STATION view, reduced motion (no animated machines, hurt flash, effects, sweep or strike animations, pulsing or CSS animations), status colours (`ui/palette.js`: standard green / amber / red, or colourblind-safe blue / yellow / orange from the Okabe-Ito palette), and label mode. Stored in `localStorage` under `kestrel9.settings`, separately from the save.
+- **Sound** (`ui/audio.js`): synthesized with the Web Audio API, no audio files. It starts on the first key press or tap (browser autoplay rules) and follows core events: tracers and explosions (`fx`), `hurt`, `sweep`, `strike`, and `log` lines (an alarm for `bad`, a chime for `good`). Each sound is rate-limited so busy turns don't get noisy. A low station hum drops in pitch when the air around you is thin. Volume is a setting (off to 100%).
+- **Settings** (title and help screens, `ui/settings.js`): text size (zooms panels and dialogs, not the map canvas, so tapping the map stays accurate), map tile size in the STATION view, sound volume, reduced motion (no animated machines, hurt flash, effects, sweep or strike animations, pulsing or CSS animations), status colours (`ui/palette.js`: standard green / amber / red, or colourblind-safe blue / yellow / orange from the Okabe-Ito palette), and label mode. Stored in `localStorage` under `kestrel9.settings`, separately from the save.
 
 ## Save system
 
