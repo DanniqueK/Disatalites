@@ -1,4 +1,4 @@
-import { BR, MC, MD, SMALL } from '../core/data.js';
+import { BR, isHall, MC, MD, SMALL } from '../core/data.js';
 import { log } from '../core/messages.js';
 import { G } from '../core/state.js';
 import { cloneShape } from './shapes.js';
@@ -20,7 +20,7 @@ export function learnFrom(pack, why) {
   const got = [];
   const key =
     pack.fn + '/' + pack.brand + '/' + pack.shape.w + 'x' + pack.shape.h + '/' + pack.shape.g.join('').length;
-  if (pack.fn !== 'tube' && !(G.schem || []).some(h => h.key === key)) {
+  if (!isHall(pack.fn) && !(G.schem || []).some(h => h.key === key)) {
     (G.schem = G.schem || []).push({
       key,
       fn: pack.fn,

@@ -13,7 +13,6 @@ export const BR = {
     fg: '.',
     door: '#d0b040',
     pat: 'rivet',
-    shapes: ['tube', 'tube', 'rect'],
   },
   aster: {
     n: 'Aster Dynamics',
@@ -25,7 +24,6 @@ export const BR = {
     fg: '·',
     door: '#f0f0f0',
     pat: 'plate',
-    shapes: ['rect', 'rect', 'L'],
   },
   tianhe: {
     n: 'Tianhe Heavy Industries',
@@ -37,7 +35,6 @@ export const BR = {
     fg: '.',
     door: '#ffcc40',
     pat: 'brick',
-    shapes: ['plus', 'plus', 'rect'],
   },
   columbus: {
     n: 'Columbus-Ariane Consortium',
@@ -49,7 +46,6 @@ export const BR = {
     fg: '.',
     door: '#8ad0ff',
     pat: 'grid',
-    shapes: ['oct', 'oct', 'rect'],
   },
   kibo: {
     n: 'Kibo-Mitsu',
@@ -61,7 +57,6 @@ export const BR = {
     fg: '·',
     door: '#e8f0f0',
     pat: 'plate',
-    shapes: ['L', 'L', 'rect'],
   },
   bharat: {
     n: 'Bharat Orbital',
@@ -73,7 +68,6 @@ export const BR = {
     fg: '.',
     door: '#ffb040',
     pat: 'hatch',
-    shapes: ['round', 'round', 'oct'],
   },
   scav: {
     n: 'Scav-built',
@@ -85,7 +79,6 @@ export const BR = {
     fg: ',',
     door: '#c08060',
     pat: 'scrap',
-    shapes: ['blob', 'blob', 'tube'],
   },
 };
 export const BRANDS = Object.keys(BR);
@@ -406,30 +399,47 @@ export const FX = {
   },
 };
 export const SMALL = ['locker', 'bunk', 'escrub', 'turret'];
-export const FN = {
-  pod_clone: { n: 'Clone Bay', m: ['pod', 'terminal'] },
-  pod_cryo: { n: 'Cryo Bay', m: ['cryo', 'terminal'] },
-  junction: { n: 'Junction', m: ['rack', 'escrub'] },
-  power: { n: 'Power Core', m: ['reactor', 'battery'] },
-  storage: { n: 'Storage', m: ['locker'] },
-  life: { n: 'Life Support', m: ['scrubber'] },
-  workshop: { n: 'Workshop', m: ['fab', 'terminal'] },
-  comms: { n: 'Comms', m: ['comms'] },
-  dock: { n: 'Drone Bay', m: ['rack', 'rack'] },
-  hydro: { n: 'Hydroponics', m: ['hydro'] },
-  solar: { n: 'Solar Array', m: ['solar'] },
-  launch: { n: 'Launch Bay', m: ['launch'] },
-  sensor: { n: 'Sensor Array', m: ['sensor'] },
-  auto: { n: 'Automation Hub', m: ['maint'] },
-  refinery: { n: 'Refinery', m: ['refinery'] },
-  medbay: { n: 'Med Bay', m: ['med'] },
-  hab: { n: 'Hab Module', m: ['bunk', 'bunk'] },
-  cargo: { n: 'Cargo Hold', m: ['locker', 'locker'], loot: 4 },
-  defense: { n: 'Defense Module', m: ['defense'] },
-  tube: { n: 'Connector Tube', m: [] },
-  driver: { n: 'Mass Driver Bay', m: ['driver'] },
-  engine: { n: 'Engine Block', m: ['thruster', 'thruster'] },
+/**
+ * Standard room footprints (floor tiles, without walls). Rooms are rectangles with a door centred on
+ * each long side; the shape grid adds a one-tile wall around the floor.
+ */
+export const ROOM_SIZE = {
+  S: [5, 5],
+  M: [7, 5],
+  L: [7, 7],
 };
+/**
+ * Section functions. `m` are the machines the room is built around, `sz` its standard size (it grows
+ * to the next size if the machines do not fit), `hall` marks corridor pieces, which rooms dock onto.
+ */
+export const FN = {
+  pod_clone: { n: 'Clone Bay', m: ['pod', 'terminal'], sz: 'S' },
+  pod_cryo: { n: 'Cryo Bay', m: ['cryo', 'terminal'], sz: 'S' },
+  junction: { n: 'Rack Room', m: ['rack', 'escrub'], sz: 'S' },
+  power: { n: 'Power Core', m: ['reactor', 'battery'], sz: 'M' },
+  storage: { n: 'Storage', m: ['locker'], sz: 'S' },
+  life: { n: 'Life Support', m: ['scrubber'], sz: 'S' },
+  workshop: { n: 'Workshop', m: ['fab', 'terminal'], sz: 'M' },
+  comms: { n: 'Comms', m: ['comms'], sz: 'S' },
+  dock: { n: 'Drone Bay', m: ['rack', 'rack'], sz: 'M' },
+  hydro: { n: 'Hydroponics', m: ['hydro'], sz: 'M' },
+  solar: { n: 'Solar Array', m: ['solar'], sz: 'S' },
+  launch: { n: 'Launch Bay', m: ['launch'], sz: 'M' },
+  sensor: { n: 'Sensor Array', m: ['sensor'], sz: 'S' },
+  auto: { n: 'Automation Hub', m: ['maint'], sz: 'S' },
+  refinery: { n: 'Refinery', m: ['refinery'], sz: 'S' },
+  medbay: { n: 'Med Bay', m: ['med'], sz: 'S' },
+  hab: { n: 'Hab Module', m: ['bunk', 'bunk'], sz: 'S' },
+  cargo: { n: 'Cargo Hold', m: ['locker', 'locker'], loot: 4, sz: 'M' },
+  defense: { n: 'Defense Module', m: ['defense'], sz: 'S' },
+  driver: { n: 'Mass Driver Bay', m: ['driver'], sz: 'M' },
+  engine: { n: 'Engine Block', m: ['thruster', 'thruster'], sz: 'M' },
+  hall: { n: 'Hallway', m: [], hall: true },
+  hub: { n: 'Junction Hub', m: [], hall: true },
+  tube: { n: 'Connector Tube', m: [], hall: true },
+};
+/** Corridor pieces (hallways, hubs, tubes and welded connectors). Rooms may only dock onto these. */
+export const isHall = fn => !!(FN[fn] && FN[fn].hall);
 export const DPOOL = {
   hydro: 3,
   solar: 4,

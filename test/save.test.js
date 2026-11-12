@@ -76,15 +76,10 @@ describe('save and load', () => {
     expect(res.data.G.b).toBe(2);
   });
 
-  it('gives v9 saves (before the seeded RNG) a seed', () => {
+  it('rejects saves from before the hallway station layout (format 10 and older)', () => {
     const data = JSON.parse(serialize());
-    data.G.v = 9;
-    delete data.G.seed;
-    delete data.G.rng;
-    const res = parseSave(JSON.stringify(data));
-    expect(res.ok).toBe(true);
-    expect(res.data.G.seed).toBeTypeOf('number');
-    expect(res.data.G.rng).toBe(res.data.G.seed);
+    data.G.v = 10;
+    expect(parseSave(JSON.stringify(data)).reason).toContain('too old');
   });
 
   it.each([

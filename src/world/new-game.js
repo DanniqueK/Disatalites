@@ -1,9 +1,9 @@
 import { SAVE_VERSION, T, WH, WW } from '../core/constants.js';
-import { BR, BRANDS, EN, FAC, mk } from '../core/data.js';
+import { BR, BRANDS, EN, FAC, isHall, mk } from '../core/data.js';
 import { log } from '../core/messages.js';
 import { fxRandom, newSeed, random } from '../core/rng.js';
 import { G, M, P, setG, setP } from '../core/state.js';
-import { cheb, D8, idx, pick, rnd, rr, shuffle } from '../core/util.js';
+import { cheb, D8, idx, pick, rr, shuffle } from '../core/util.js';
 import { initEarth } from '../space/earth.js';
 import { addDebris } from '../space/exterior-objects.js';
 import { genSectors, initSectors } from '../space/sectors.js';
@@ -11,6 +11,7 @@ import { addBreachMod, dockPack, fitsAt, freePorts, modCells } from './build.js'
 import { fov } from './fov.js';
 import { dropItem } from './machines.js';
 import { makePack, packFree } from './packs.js';
+import { rotDims } from './shapes.js';
 
 /**
  * @param {'clone' | 'cryo'} start
@@ -129,52 +130,45 @@ export function newGame(start, seed = newSeed()) {
   };
   const cf = t => conds[t] ?? 30;
   const podFn = start === 'clone' ? 'pod_clone' : 'pod_cryo';
-  const p0 = makePack(podFn, pick(BRANDS), { cond: cf, pressure: 75 });
-  const cx = Math.floor(WW / 2) - Math.floor(p0.shape.w / 2),
-    cy = Math.floor(WH / 2) - Math.floor(p0.shape.h / 2);
-  dockPack(p0, null, { rot: rnd(4), pi: -1, ox: cx, oy: cy }, true);
-  const order = shuffle(['junction', 'power', 'storage', 'life', 'workshop', 'hab']);
-  if (random() < 0.5) order.push('hydro');
-  for (let k = 0; k < rr(1, 2); k++) order.splice(rr(1, order.length), 0, 'tube');
+  // The station core: a junction hub at the centre. Rooms dock onto hallways around it, and new
+  // hallway is only added when no room fits, so the station stays compact.
+  const hallCond = t => (t === 'junc' ? rr(55, 85) : cf(t));
+  const hub = makePack('hub', pick(BRANDS), { cond: hallCond, pressure: rr(40, 60) });
+  dockPack(hub, null, { rot: 0, pi: -1, ox: CX - (hub.shape.w >> 1), oy: CY - (hub.shape.h >> 1) }, true);
+  const rooms = [podFn, ...shuffle(['junction', 'power', 'storage', 'life', 'workshop', 'hab'])];
+  if (random() < 0.5) rooms.push('hydro');
   const hay = shuffle(['life', 'workshop', 'hab', 'hydro']).slice(0, 2);
-  for (const fn of order) {
-    const pk = makePack(fn, fn === 'tube' ? pick(['scav', 'aster', 'volkov']) : pick(BRANDS), {
-      cond: t =>
-        t === 'node'
-          ? random() < 0.3
-            ? rr(30, 50)
-            : rr(60, 75)
-          : t === 'junc'
-            ? fn === 'tube'
-              ? rr(55, 85)
-              : random() < 0.5
-                ? rr(30, 55)
-                : rr(60, 80)
-            : cf(t),
-      pressure: rr(30, 60),
-    });
-    pk.ctl = fn === 'tube';
+  for (const fn of rooms) {
+    const pk =
+      fn === podFn
+        ? makePack(fn, pick(BRANDS), { cond: cf, pressure: 75 })
+        : makePack(fn, pick(BRANDS), {
+            cond: t =>
+              t === 'node'
+                ? random() < 0.3
+                  ? rr(30, 50)
+                  : rr(60, 75)
+                : t === 'junc'
+                  ? random() < 0.5
+                    ? rr(30, 55)
+                    : rr(60, 80)
+                  : cf(t),
+            pressure: rr(30, 60),
+          });
+    pk.ctl = fn === podFn;
     pk.haywire = hay.includes(fn);
     if (hay.includes(fn) && fn !== 'hydro' && random() < 0.7) {
       const f = packFree(pk).find(([x, y]) => pk.shape.ports.every(p => cheb(p.x, p.y, x, y) > 3));
       if (f) pk.actors.push({ type: 'feral', lx: f[0], ly: f[1], hp: EN.feral.hp });
     }
-    const fps = shuffle(freePorts());
-    let done = false;
-    for (const fp of fps) {
-      const f = fitsAt(pk, fp);
-      if (f.length) {
-        dockPack(pk, fp, pick(f), true);
-        done = true;
-        break;
-      }
-    }
-    if (!done) return newGame(start);
+    if (!placeCompact(pk, () => makePack('hall', pick(BRANDS), { cond: hallCond, pressure: rr(30, 60) })))
+      return newGame(start, G.rng >>> 0);
   }
-  for (const m of G.mods) for (const l of Object.values(m.links)) l.br = 2;
-  G.mods[0].ctl = true;
+  for (const m of G.mods) if (isHall(m.fn)) m.ctl = true;
+  const podMod = G.mods.find(m => m.fn === podFn);
   for (const k of G.machines)
-    if ((k.type === 'node' || k.type === 'junc') && k.mod === G.mods[0].id) k.cond = 100;
+    if ((k.type === 'node' || k.type === 'junc') && (k.mod === podMod.id || k.mod === G.mods[0].id))
+      k.cond = 100;
   const mOf = fn => G.mods.find(m => m.fn === fn);
   const floorsOf = m =>
     modCells(m)
@@ -230,6 +224,39 @@ export function newGame(start, seed = newSeed()) {
   );
   fov();
 }
+const CX = WW >> 1,
+  CY = WH >> 1;
+
+/** Best free spot for `pack`: the docking position whose centre is nearest the station centre. */
+function closestFit(pack, onlyHalls) {
+  let best = null;
+  for (const fp of freePorts()) {
+    if (onlyHalls && !isHall(G.mods[fp.mi].fn)) continue;
+    for (const fit of fitsAt(pack, fp)) {
+      const [rw, rh] = rotDims(pack.shape, fit.rot);
+      const s = Math.hypot(fit.ox + rw / 2 - CX, (fit.oy + rh / 2 - CY) * 1.2) + random() * 2;
+      if (!best || s < best.s) best = { fp, fit, s };
+    }
+  }
+  return best;
+}
+
+/** Dock a room as close to the centre as it fits, extending the hallways when it fits nowhere. */
+function placeCompact(pack, newHall) {
+  for (let extend = 0; extend <= 8; extend++) {
+    const spot = closestFit(pack, false);
+    if (spot) {
+      dockPack(pack, spot.fp, spot.fit, true);
+      return true;
+    }
+    const hall = newHall();
+    const hs = closestFit(hall, true);
+    if (!hs) return false;
+    dockPack(hall, hs.fp, hs.fit, true);
+  }
+  return false;
+}
+
 export function initStars() {
   M.stars = new Float32Array(WW * WH);
   for (let i = 0; i < WW * WH; i++) if (fxRandom() < 0.07) M.stars[i] = 0.2 + fxRandom() * 0.8;

@@ -40,7 +40,6 @@ import {
   packModule,
   packModule0,
   removeBreach,
-  setBrace,
 } from '../world/build.js';
 import { claimDone, lockdown, modBreaches } from '../world/control.js';
 import { addStock, dropNear, online } from '../world/machines.js';
@@ -194,7 +193,6 @@ function droneAct(d) {
       'iface',
       'cut',
       'seal',
-      'brace',
       'tube2',
       'scrapmod',
       'build',
@@ -549,21 +547,6 @@ function droneAct(d) {
           d.task = { type: 'idle' };
         }
       } else moveTo(d, adjTo(ox, oy), spd(d));
-      break;
-    }
-    case 'brace': {
-      const m = modById(t.mid);
-      if (!m || !m.links[t.pi]) {
-        d.task = { type: 'idle' };
-        break;
-      }
-      if (cheb(d.x, d.y, t.x, t.y) <= 2) {
-        if (++t.w >= 6) {
-          setBrace(m, t.pi);
-          log(`${d.name} finished a truss brace on the ${m.name} joint.`, 'good');
-          d.task = { type: 'idle' };
-        }
-      } else moveTo(d, (a, b) => cheb(a, b, t.x, t.y) <= 2, spd(d));
       break;
     }
     case 'tube2': {

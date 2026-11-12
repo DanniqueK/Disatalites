@@ -1,5 +1,5 @@
 import { T } from '../core/constants.js';
-import { BR, CONN, DT, FN, FX, MC, MD, stById } from '../core/data.js';
+import { BR, CONN, DT, FN, FX, isHall, MC, MD, stById } from '../core/data.js';
 import { log } from '../core/messages.js';
 import { G, M, V } from '../core/state.js';
 import { cheb, dirName, idx, inB, rr } from '../core/util.js';
@@ -10,10 +10,10 @@ import { hackStatus, HULL, LC, locked, tagName, where } from '../space/sectors.j
 import { showModal } from '../ui/log-modal.js';
 import { setTab } from '../ui/panels.js';
 import { render } from '../ui/render.js';
-import { canDetach, cutSpot, fitsAt, freePorts, jointLoads, modById, planTube } from '../world/build.js';
+import { canDetach, cutSpot, fitsAt, freePorts, modById, planTube } from '../world/build.js';
 import { modBreaches } from '../world/control.js';
 import { scrapValue } from '../world/salvage.js';
-import { connShape, portWorld, toLocal } from '../world/shapes.js';
+import { connShape, toLocal } from '../world/shapes.js';
 
 /** @typedef {import('../core/types.js').ModalButton} ModalButton */
 
@@ -147,7 +147,6 @@ export function extTap(x, y) {
       return cmdDrone(d, { type: 'return' }, `${d.name}: returning to the hatch.`);
   }
   const t = home ? M.map[idx(x, y)] : T.VOID;
-  if (t === T.DOOR) return jointMenu(d, x, y);
   if (t === T.BREACH) {
     const b = G.brk.find(b => b.x === x && b.y === y);
     if (d.dt !== 'util') {
@@ -312,7 +311,7 @@ const connCost = k => {
   return { s: n * 2 + 2, c: CONN[k].p.length > 2 ? 2 : 1, t: 3 + Math.ceil(n / 2) };
 };
 function connMenu(d, fp) {
-  const opts = Object.keys(CONN).map(k => ({ k, fit: fitsAt({ shape: connShape(k) }, fp) }));
+  const opts = Object.keys(CONN).map(k => ({ k, fit: fitsAt({ fn: 'tube', shape: connShape(k) }, fp) }));
   showModal(
     'CONNECTOR PIECES',
     `Prefab corridor parts, welded on by a Utility drone. Pieces with more ports let you branch out or close loops (loops share structural load).\nPort: ${portLabel(fp)}.`,
@@ -404,46 +403,6 @@ function cutOpt(d, m, x, y) {
     },
   ];
 }
-function jointAt(x, y) {
-  return (G.joints || []).find(j => {
-    const a = portWorld(G.mods[j.a], j.pa),
-      b = portWorld(G.mods[j.b], j.pb);
-    return (a.x === x && a.y === y) || (b.x === x && b.y === y);
-  });
-}
-function jointMenu(d, x, y) {
-  G.joints = jointLoads();
-  const j = jointAt(x, y);
-  if (!j) {
-    log('Nothing to do with that door from outside.');
-    return refresh();
-  }
-  const A = G.mods[j.a],
-    B = G.mods[j.b];
-  const st = j.loop
-    ? 'Part of a loop: the load is shared, this joint is safe.'
-    : `Load ${j.load} / ${j.cap}${j.load > j.cap ? ' OVERLOADED: it will crack and may shear' : j.load > j.cap * 0.75 ? ' (close to the limit)' : ''}`;
-  showModal(
-    'JOINT',
-    `${A.name} <-> ${B.name}\n${st}\nBraces: ${j.br}/2 (each +80 capacity).\n\nLoad is the mass hanging past this joint (floor area, machines). Spinning up the Ion Drive multiplies it by 1.5.\nTo relieve it: brace the joint, move heavy sections closer to the core, or add a second tube so the sections form a loop.`,
-    [
-      {
-        t: `Brace with ${d.name} (6 scrap, 1 circ, 6 turns)`,
-        dis: j.br >= 2 || d.dt !== 'util' || G.stock.scrap < 6 || G.stock.circ < 1,
-        f: () => {
-          G.stock.scrap -= 6;
-          G.stock.circ--;
-          cmdDrone(
-            d,
-            { type: 'brace', mid: A.id, pi: j.pa, w: 0, x: j.x, y: j.y },
-            `${d.name}: welding a truss brace over the ${A.name} joint.`,
-          );
-        },
-      },
-      { t: 'Close' },
-    ],
-  );
-}
 function tubeTap(d, x, y) {
   const pl = V.tubePlan;
   const fp = freePorts().find(p => p.mid === pl.mid && p.pi === pl.pi);
@@ -493,7 +452,7 @@ function tubeTap(d, x, y) {
 /** @returns {ModalButton[]} */
 function ifaceOpts(d, m, mi) {
   const node = G.machines.find(k => k.type === 'node' && k.mi === mi);
-  if (!node || m.fn === 'tube') return [];
+  if (!node || isHall(m.fn)) return [];
   const tag = d.iface ? '' : ' [needs Interface Module]';
   const nb = modBreaches(mi);
   const o = [];
@@ -594,8 +553,6 @@ function taskText2(d, t) {
       return `cutting a port ${t.w}/6`;
     case 'seal':
       return `sealing a port ${t.w}/4`;
-    case 'brace':
-      return `bracing a joint ${t.w}/6`;
     case 'tube2':
       return `laying tube ${t.w}/${t.need}`;
     case 'scrap':

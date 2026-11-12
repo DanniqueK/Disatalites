@@ -1,51 +1,51 @@
 import { describe, expect, it } from 'vitest';
-import { genShape, rotD, rotDims, rotP, toLocal, toWorld } from '../src/world/shapes.js';
+import { ROOM_SIZE } from '../src/core/data.js';
+import { hallShape, roomShape, rotD, rotDims, rotP, toLocal, toWorld } from '../src/world/shapes.js';
 
-const KINDS = ['rect', 'tube', 'truss', 'L', 'plus', 'oct', 'round', 'blob'];
+const at = (sh, x, y) => (x >= 0 && y >= 0 && x < sh.w && y < sh.h ? sh.g[y][x] : ' ');
 
-describe('genShape', () => {
-  it.each(KINDS)('%s: walled, connected floor with 2-4 outward ports', kind => {
-    for (let n = 0; n < 25; n++) {
-      const sh = genShape(kind);
-      expect(sh.g).toHaveLength(sh.h);
-      for (const row of sh.g) expect(row).toHaveLength(sh.w);
+function checkShape(sh) {
+  expect(sh.g).toHaveLength(sh.h);
+  for (const row of sh.g) expect(row).toHaveLength(sh.w);
+  for (const p of sh.ports) {
+    expect(at(sh, p.x, p.y)).toBe('P');
+    expect(at(sh, p.x - p.dx, p.y - p.dy)).toBe('.');
+    expect(at(sh, p.x + p.dx, p.y + p.dy)).toBe(' ');
+  }
+}
 
-      const at = (x, y) => (x >= 0 && y >= 0 && x < sh.w && y < sh.h ? sh.g[y][x] : ' ');
-      const floors = [];
-      for (let y = 0; y < sh.h; y++) for (let x = 0; x < sh.w; x++) if (at(x, y) === '.') floors.push([x, y]);
-      expect(floors.length).toBeGreaterThan(0);
+describe('standard shapes', () => {
+  it.each(Object.keys(ROOM_SIZE))(
+    'room %s: walled floor of the standard size with a door on each long side',
+    size => {
+      const sh = roomShape(size);
+      checkShape(sh);
+      const [fw, fh] = ROOM_SIZE[size];
+      expect([sh.w, sh.h]).toEqual([fw + 2, fh + 2]);
+      expect(sh.ports).toHaveLength(2);
+      for (const p of sh.ports) expect(p.x).toBe(sh.w >> 1);
+    },
+  );
 
-      for (const [x, y] of floors)
-        for (let dy = -1; dy <= 1; dy++)
-          for (let dx = -1; dx <= 1; dx++) expect(at(x + dx, y + dy)).not.toBe(' ');
+  it('hallway: three tiles wide with end doors and one room door per side', () => {
+    const sh = hallShape('hall');
+    checkShape(sh);
+    expect(sh.h - 2).toBe(3);
+    expect(sh.ports.map(p => [p.dx, p.dy])).toEqual(
+      expect.arrayContaining([
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+      ]),
+    );
+  });
 
-      const seen = new Set([floors[0].join()]);
-      const stack = [floors[0]];
-      while (stack.length) {
-        const [x, y] = stack.pop();
-        for (const [dx, dy] of [
-          [1, 0],
-          [-1, 0],
-          [0, 1],
-          [0, -1],
-        ]) {
-          const k = [x + dx, y + dy].join();
-          if (at(x + dx, y + dy) === '.' && !seen.has(k)) {
-            seen.add(k);
-            stack.push([x + dx, y + dy]);
-          }
-        }
-      }
-      expect(seen.size).toBe(floors.length);
-
-      expect(sh.ports.length).toBeGreaterThanOrEqual(2);
-      expect(sh.ports.length).toBeLessThanOrEqual(4);
-      for (const p of sh.ports) {
-        expect(at(p.x, p.y)).toBe('P');
-        expect(at(p.x - p.dx, p.y - p.dy)).toBe('.');
-        expect(at(p.x + p.dx, p.y + p.dy)).toBe(' ');
-      }
-    }
+  it('hub: a 3 x 3 junction with a door on every side', () => {
+    const sh = hallShape('hub');
+    checkShape(sh);
+    expect([sh.w, sh.h]).toEqual([5, 5]);
+    expect(sh.ports).toHaveLength(4);
   });
 });
 

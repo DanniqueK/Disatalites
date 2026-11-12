@@ -8,6 +8,7 @@ import {
   ER,
   FAC,
   hasAI,
+  isHall,
   IT,
   MD,
   OC,
@@ -52,7 +53,6 @@ import { setTab } from './panels.js';
 import { cutSpot, freePorts, hullNear, modById, modCells, modIndex } from '../world/build.js';
 import { modBreaches } from '../world/control.js';
 import { commsOnline, ctlOK, hasOnline, machineStatus, online } from '../world/machines.js';
-import { portWorld } from '../world/shapes.js';
 
 export const cv = $('#map'),
   ctx = cv.getContext('2d');
@@ -1240,23 +1240,6 @@ function renderExt() {
       ctx.fillStyle = 'rgba(47,220,79,.25)';
       ctx.fillRect(sx(fp.x + fp.dx), sy(fp.y + fp.dy), ts, ts);
     }
-    for (const j of G.joints || []) {
-      const r = j.loop ? 0 : j.load / j.cap;
-      const c = j.loop ? '#4aa8ff' : r > 1 ? '#ff3a3a' : r > 0.75 ? '#ffc040' : '#2fdc4f';
-      const b = portWorld(G.mods[j.b], j.pb);
-      ctx.strokeStyle = c;
-      ctx.lineWidth = Math.max(1.5, ts * 0.14);
-      ctx.strokeRect(
-        Math.min(sx(j.x), sx(b.x)) + 1,
-        Math.min(sy(j.y), sy(b.y)) + 1,
-        (Math.abs(j.x - b.x) + 1) * ts - 2,
-        (Math.abs(j.y - b.y) + 1) * ts - 2,
-      );
-      if (j.br && ts >= 8) {
-        ctx.fillStyle = c;
-        for (let k = 0; k < j.br; k++) ctx.fillRect(sx(j.x) + 2 + k * 4, sy(j.y) - 3, 3, 3);
-      }
-    }
     if (V.tubePlan) {
       const fp = freePorts().find(p => p.mid === V.tubePlan.mid && p.pi === V.tubePlan.pi);
       if (fp) {
@@ -1496,7 +1479,7 @@ function renderExt() {
     }
     if (home)
       for (const m of G.mods) {
-        if (m.fn === 'tube') continue;
+        if (isHall(m.fn)) continue;
         const cs = modCells(m);
         let mx = 0,
           my = 0;
@@ -1607,8 +1590,6 @@ function taskTarget(d) {
       const c = m && cutSpot(m, t.lx, t.ly);
       return c ? [c.ox, c.oy] : null;
     }
-    case 'brace':
-      return [t.x, t.y];
     case 'scrap':
     case 'park': {
       const o = objById(t.oid);

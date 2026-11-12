@@ -12,7 +12,7 @@ import { atHatch, extTick } from './exterior-tick.js';
 import { addFx, hurtPlayer, occupied, stats } from './stats.js';
 import { directorTick } from './storyteller.js';
 import { allyTick, crewTick, HULL } from '../space/sectors.js';
-import { modIndex, removeBreach, stressTick } from '../world/build.js';
+import { modIndex, removeBreach } from '../world/build.js';
 import { bfsInt, fov, intNext, los, pressureAt } from '../world/fov.js';
 import { addStock, commsOnline, ctlOK, dropNear, online } from '../world/machines.js';
 
@@ -87,7 +87,6 @@ export const onGrid = m => {
 };
 export function powerTick() {
   gridTick();
-  stressTick();
   let gen = G.allies.filter(a => a.perk === 'grid').length * 5,
     cap = 30;
   for (const m of G.machines) {
