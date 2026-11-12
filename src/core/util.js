@@ -1,6 +1,5 @@
 import { WH, WW } from './constants.js';
 
-export const $ = s => document.querySelector(s);
 export const rnd = n => Math.floor(Math.random() * n);
 export const rr = (a, b) => a + rnd(b - a + 1);
 export const pick = a => a[rnd(a.length)];

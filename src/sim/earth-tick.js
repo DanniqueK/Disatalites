@@ -1,5 +1,7 @@
 import { T } from '../core/constants.js';
-import { FAC, RC, TAGK, hasAI, rivalsOf } from '../core/data.js';
+import { FAC, hasAI, RC, rivalsOf, TAGK } from '../core/data.js';
+import { emit } from '../core/events.js';
+import { log, queueModal } from '../core/messages.js';
 import { G, M } from '../core/state.js';
 import { clamp, idx, pick, rnd, rr } from '../core/util.js';
 import { endGame } from './end.js';
@@ -7,8 +9,6 @@ import { occupied } from './stats.js';
 import { cellName, frontierCell, legacyTick, shares, territoryTick } from '../space/earth.js';
 import { addPod, addRogue } from '../space/exterior-objects.js';
 import { genStation, revealSector } from '../space/sectors.js';
-import { log, queueModal } from '../ui/log-modal.js';
-import { setTab } from '../ui/panels.js';
 import { addBreachMod, modCells } from '../world/build.js';
 import { addStock, commsOnline, hasOnline } from '../world/machines.js';
 
@@ -35,7 +35,7 @@ Rivalries: COMPACT vs COVENANT, COVENANT vs SAHEL, COMPACT vs TIDEWATER.
 They have called an Accord in 4500 cycles. Every satellite you put up and every IFF table you spoof shifts the balance.
 
 Satellite schematics received: WEATHER, NAV, RECON.`,
-    [{ t: 'Open EARTH view', f: () => setTab('earth') }, { t: 'Close' }],
+    [{ t: 'Open EARTH view', f: () => emit('tab', 'earth') }, { t: 'Close' }],
   );
 }
 function genReq(fi) {

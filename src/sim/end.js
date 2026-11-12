@@ -1,12 +1,12 @@
 import { EGH, EGW, T } from '../core/constants.js';
-import { FAC, TAGK, isRival, mk } from '../core/data.js';
+import { FAC, isRival, mk, TAGK } from '../core/data.js';
+import { emit } from '../core/events.js';
+import { log, queueModal } from '../core/messages.js';
 import { clearSave } from '../core/save.js';
 import { G, M, P } from '../core/state.js';
 import { D8, idx } from '../core/util.js';
 import { occupied } from './stats.js';
 import { shares } from '../space/earth.js';
-import { showTitle } from '../ui/help-title.js';
-import { log, queueModal } from '../ui/log-modal.js';
 import { fov } from '../world/fov.js';
 import { dropItem, online } from '../world/machines.js';
 
@@ -43,7 +43,7 @@ export function playerDied() {
   queueModal(
     'VITAL SIGNS: FLATLINE',
     `Cause: ${G.killer || 'unknown'}.\n${G.start === 'clone' ? 'No working clone pod or not enough rations to re-grow you.' : 'Cryo sleepers only get one life.'}\n\nTurns survived: ${G.turn}\nSections docked: ${G.stat.docked}\nSatellites launched: ${G.stat.sats}\n\nKESTREL-9 drifts on, silent.`,
-    [{ t: 'New game', f: showTitle }],
+    [{ t: 'New game', f: () => emit('title') }],
   );
 }
 export function endGame(kind) {
@@ -74,5 +74,5 @@ export function endGame(kind) {
     txt = `No one can dominate. ${ord.map(f => FAC[f].sh + ' ' + pct(f) + '%').join(', ')}. Four delegations agree to shared orbital lanes, with KESTREL-9 as neutral ground.`;
   }
   txt += `\n\nThe surface is still mostly dead: ${sh.tot} of ${EGW * EGH} map cells are settled. Legacy satellites tagged by you: ${G.legacy.filter(L => L.tags.some(t => t !== TAGK)).length}/${G.legacy.length}.\nYour closest ally: ${FAC[fav].sh} (rep ${Math.round(G.fac[fav].rep)}).\nStation: ${G.mods.length} sections from ${new Set(G.mods.map(m => m.brand)).size} makers. Satellites launched: ${G.stat.sats} (${G.stat.lost} shot down). Turns: ${G.turn}.`;
-  queueModal(head, txt, [{ t: 'New game', f: showTitle }]);
+  queueModal(head, txt, [{ t: 'New game', f: () => emit('title') }]);
 }

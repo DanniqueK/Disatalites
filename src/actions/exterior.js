@@ -1,26 +1,19 @@
-import { modBreaches } from './player.js';
 import { T } from '../core/constants.js';
-import { BR, DT, FN, FX, MC, MD, SMALL, hasAI, hasCrew, stById } from '../core/data.js';
+import { BR, CONN, DT, FN, FX, hasAI, hasCrew, MC, MD, stById } from '../core/data.js';
+import { log } from '../core/messages.js';
 import { G, M, V } from '../core/state.js';
-import { D4, D8, cheb, dirName, idx, inB, rr } from '../core/util.js';
+import { cheb, dirName, idx, inB, rr } from '../core/util.js';
 import { atHatch, cargoLoad } from '../sim/exterior-tick.js';
 import { refresh } from '../sim/turn.js';
-import { hatchOf, objById } from '../space/exterior-objects.js';
+import { derHit, hatchOf, objById } from '../space/exterior-objects.js';
 import { HULL, LC, locked, tagName, where } from '../space/sectors.js';
-import { log, showModal } from '../ui/log-modal.js';
+import { showModal } from '../ui/log-modal.js';
 import { setTab } from '../ui/panels.js';
 import { render } from '../ui/render.js';
-import {
-  canDetach,
-  cutSpot,
-  fitsAt,
-  freePorts,
-  jointLoads,
-  modById,
-  modCells,
-  planTube,
-} from '../world/build.js';
-import { cloneShape, portWorld, toLocal } from '../world/shapes.js';
+import { canDetach, cutSpot, fitsAt, freePorts, jointLoads, modById, planTube } from '../world/build.js';
+import { modBreaches } from '../world/control.js';
+import { scrapValue } from '../world/salvage.js';
+import { connShape, portWorld, toLocal } from '../world/shapes.js';
 
 /** @typedef {import('../core/types.js').ModalButton} ModalButton */
 
@@ -40,41 +33,6 @@ export function cmdDrone(d, task, msg) {
 function portLabel(fp) {
   const m = modById(fp.mid);
   return `${m.name} (${BR[m.brand].cc}) ${dirName(fp.dx, fp.dy)} port`;
-}
-export function scrapValue(pack) {
-  const fl = pack.shape.g.join('').split('.').length - 1;
-  let sc = Math.round(fl * 0.6),
-    ci = 1;
-  for (const k of pack.mach) {
-    if (!MC[k.type]) continue;
-    const q = k.cond >= 60 ? 0.5 : 0.3;
-    sc += Math.round(MC[k.type][0] * q);
-    ci += Math.round(MC[k.type][1] * q);
-  }
-  return { s: sc, c: ci, t: 4 + Math.ceil(fl / 6) };
-}
-export function learnFrom(pack, why) {
-  const got = [];
-  const key =
-    pack.fn + '/' + pack.brand + '/' + pack.shape.w + 'x' + pack.shape.h + '/' + pack.shape.g.join('').length;
-  if (pack.fn !== 'tube' && !(G.schem || []).some(h => h.key === key)) {
-    (G.schem = G.schem || []).push({
-      key,
-      fn: pack.fn,
-      brand: pack.brand,
-      name: pack.name,
-      shape: cloneShape(pack.shape),
-      fl: pack.shape.g.join('').split('.').length - 1,
-    });
-    got.push(`${pack.name} hull (${BR[pack.brand].cc})`);
-  }
-  for (const k of pack.mach) {
-    if (!SMALL.includes(k.type) || G.bp['k_' + k.type]) continue;
-    G.bp['k_' + k.type] = 1;
-    got.push(MD[k.type].n);
-  }
-  if (got.length) log(`SCHEMATICS ${why}: ${got.join(', ')}.`, 'good');
-  return got;
 }
 /** @returns {ModalButton[]} */
 function scrapOpts(d, o) {
@@ -349,158 +307,6 @@ export function extTap(x, y) {
       `${d.name}: moving to position${d.sec !== V.sec ? ' in ' + where(V.sec) : ''}.`,
     );
 }
-/* prefab connector pieces: floor cells + ports [x,y,dx,dy] in a little local grid */
-export const CONN = {
-  collar: {
-    n: 'Docking collar',
-    d: 'A short coupler that pushes a port out by two tiles.',
-    f: [
-      [1, 0],
-      [2, 0],
-    ],
-    p: [
-      [0, 0, -1, 0],
-      [3, 0, 1, 0],
-    ],
-  },
-  straight: {
-    n: 'Straight tube',
-    d: 'Five-tile corridor.',
-    f: [
-      [1, 0],
-      [2, 0],
-      [3, 0],
-      [4, 0],
-      [5, 0],
-    ],
-    p: [
-      [0, 0, -1, 0],
-      [6, 0, 1, 0],
-    ],
-  },
-  long: {
-    n: 'Long spine',
-    d: 'Nine-tile corridor for reaching far.',
-    f: [
-      [1, 0],
-      [2, 0],
-      [3, 0],
-      [4, 0],
-      [5, 0],
-      [6, 0],
-      [7, 0],
-      [8, 0],
-      [9, 0],
-    ],
-    p: [
-      [0, 0, -1, 0],
-      [10, 0, 1, 0],
-    ],
-  },
-  elbow: {
-    n: 'Elbow',
-    d: 'A 90 degree bend.',
-    f: [
-      [1, 0],
-      [2, 0],
-      [2, 1],
-      [2, 2],
-    ],
-    p: [
-      [0, 0, -1, 0],
-      [2, 3, 0, 1],
-    ],
-  },
-  tee: {
-    n: 'T-junction',
-    d: 'Splits one line into two. Three ports.',
-    f: [
-      [1, 0],
-      [2, 0],
-      [3, 0],
-      [2, 1],
-      [2, 2],
-    ],
-    p: [
-      [0, 0, -1, 0],
-      [4, 0, 1, 0],
-      [2, 3, 0, 1],
-    ],
-  },
-  cross: {
-    n: 'Cross',
-    d: 'Four-way junction. Good for closing loops.',
-    f: [
-      [2, 1],
-      [1, 2],
-      [2, 2],
-      [3, 2],
-      [2, 3],
-    ],
-    p: [
-      [0, 2, -1, 0],
-      [4, 2, 1, 0],
-      [2, 0, 0, -1],
-      [2, 4, 0, 1],
-    ],
-  },
-  hub: {
-    n: 'Node hub',
-    d: 'A small pressurized room with a port on every side.',
-    f: [
-      [1, 1],
-      [2, 1],
-      [3, 1],
-      [1, 2],
-      [2, 2],
-      [3, 2],
-      [1, 3],
-      [2, 3],
-      [3, 3],
-    ],
-    p: [
-      [0, 2, -1, 0],
-      [4, 2, 1, 0],
-      [2, 0, 0, -1],
-      [2, 4, 0, 1],
-    ],
-  },
-};
-export function connShape(k) {
-  const C = CONN[k];
-  const xs = C.f.concat(C.p).map(c => c[0]),
-    ys = C.f.concat(C.p).map(c => c[1]);
-  const ox = Math.min(...xs) - 1,
-    oy = Math.min(...ys) - 1,
-    w = Math.max(...xs) - ox + 2,
-    h = Math.max(...ys) - oy + 2;
-  const g = [];
-  for (let y = 0; y < h; y++) g.push(new Array(w).fill(' '));
-  for (const [x, y] of C.f) g[y - oy][x - ox] = '.';
-  for (const [x, y] of C.p) g[y - oy][x - ox] = 'P';
-  for (const [x, y] of C.f)
-    for (const [dx, dy] of D8) {
-      const a = x - ox + dx,
-        b = y - oy + dy;
-      if (g[b] && g[b][a] === ' ') g[b][a] = '#';
-    }
-  for (const [x, y, dx, dy] of C.p)
-    for (const [px, py] of [
-      [dy, dx],
-      [-dy, -dx],
-    ]) {
-      const a = x - ox + px,
-        b = y - oy + py;
-      if (g[b] && g[b][a] === ' ') g[b][a] = '#';
-    }
-  return {
-    kind: 'conn',
-    w,
-    h,
-    g: g.map(r => r.join('')),
-    ports: C.p.map(([x, y, dx, dy]) => ({ x: x - ox, y: y - oy, dx, dy })),
-  };
-}
 const connCost = k => {
   const n = CONN[k].f.length;
   return { s: n * 2 + 2, c: CONN[k].p.length > 2 ? 2 : 1, t: 3 + Math.ceil(n / 2) };
@@ -725,21 +531,6 @@ function ifaceOpts(d, m, mi) {
     });
   return o;
 }
-export function hullNear(m, x, y) {
-  let best = null,
-    bd = 1e9;
-  for (const c of modCells(m)) {
-    if (c.c !== '#') continue;
-    if (!D4.some(([dx, dy]) => inB(c.x + dx, c.y + dy) && M.map[idx(c.x + dx, c.y + dy)] === T.VOID))
-      continue;
-    const dd = Math.hypot(c.x - x, c.y - y);
-    if (dd < bd) {
-      bd = dd;
-      best = [c.x, c.y];
-    }
-  }
-  return best;
-}
 function stationMenu(d, st) {
   const req = 25 * st.ice,
     pw = 1 + (hasCrew('hacker') ? 1 : 0) + (hasAI('cipher') ? 2 : 0);
@@ -774,12 +565,6 @@ BRUTE FORCE (Guard drones): kill the turrets and the core. Loud. About a third o
       { t: 'Close' },
     ],
   );
-}
-export function derHit(o, x, y) {
-  const sh = o.pack.shape;
-  const ox = o.x - Math.floor(sh.w / 2),
-    oy = o.y - Math.floor(sh.h / 2);
-  return x >= ox && y >= oy && x < ox + sh.w && y < oy + sh.h;
 }
 export function cycleDrone(n) {
   if (!G.ext.drones.length) return;

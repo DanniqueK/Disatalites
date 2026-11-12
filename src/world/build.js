@@ -1,10 +1,10 @@
 import { T, WALK, WH, WW } from '../core/constants.js';
 import { BR, EN } from '../core/data.js';
+import { log } from '../core/messages.js';
 import { G, M, P } from '../core/state.js';
-import { D4, D8, cheb, dirName, idx, inB, pick } from '../core/util.js';
+import { cheb, D4, D8, dirName, idx, inB, pick } from '../core/util.js';
 import { addFx } from '../sim/stats.js';
 import { HULL } from '../space/sectors.js';
-import { log } from '../ui/log-modal.js';
 import { online } from './machines.js';
 import { cloneShape, portWorld, rotD, rotDims, rotP, setCell, toLocal, toWorld } from './shapes.js';
 
@@ -829,4 +829,20 @@ export function addBreachMod(mi, noRebuild) {
 export function removeBreach(b) {
   for (const m of G.mods) m.breaches = m.breaches.filter(x => x.id !== b.id);
   rebuildMap();
+}
+
+export function hullNear(m, x, y) {
+  let best = null,
+    bd = 1e9;
+  for (const c of modCells(m)) {
+    if (c.c !== '#') continue;
+    if (!D4.some(([dx, dy]) => inB(c.x + dx, c.y + dy) && M.map[idx(c.x + dx, c.y + dy)] === T.VOID))
+      continue;
+    const dd = Math.hypot(c.x - x, c.y - y);
+    if (dd < bd) {
+      bd = dd;
+      best = [c.x, c.y];
+    }
+  }
+  return best;
 }

@@ -1,19 +1,18 @@
-import { CONN, connShape, derHit, hullNear, learnFrom, scrapValue } from '../actions/exterior.js';
-import { claimDone, lockdown, modBreaches } from '../actions/player.js';
 import { T, WH, WW } from '../core/constants.js';
-import { DT, FX, IT, TAGK, hasAI, hasCrew, mk, stById } from '../core/data.js';
+import { CONN, DT, FX, hasAI, hasCrew, IT, mk, stById, TAGK } from '../core/data.js';
+import { cmb, log } from '../core/messages.js';
 import { G, M, P, V } from '../core/state.js';
-import { D4, D8, cheb, clamp, idx, inB, pick, roll, rr } from '../core/util.js';
+import { cheb, clamp, D4, D8, idx, inB, pick, roll, rr } from '../core/util.js';
 import { releaseSat } from './earth-tick.js';
 import { addFx } from './stats.js';
-import { extFree, hatchOf, objById, removeObj, stationBox } from '../space/exterior-objects.js';
+import { derHit, extFree, hatchOf, objById, removeObj, stationBox } from '../space/exterior-objects.js';
 import {
-  HULL,
-  LC,
   addCrew,
   arriveSector,
   hackInit,
   hackTurn,
+  HULL,
+  LC,
   locked,
   relocateHome,
   sciReward,
@@ -22,17 +21,17 @@ import {
   subdueStation,
   updateSight,
 } from '../space/sectors.js';
-import { cmb, log } from '../ui/log-modal.js';
 import {
   addBreachMod,
   buildTube,
   canDetach,
   cutSpot,
+  dockPack,
   doCut,
   doSeal,
-  dockPack,
   fitsAt,
   freePorts,
+  hullNear,
   modById,
   modCells,
   modIndex,
@@ -42,8 +41,11 @@ import {
   removeBreach,
   setBrace,
 } from '../world/build.js';
+import { claimDone, lockdown, modBreaches } from '../world/control.js';
 import { addStock, dropNear, online } from '../world/machines.js';
 import { makePack } from '../world/packs.js';
+import { learnFrom, scrapValue } from '../world/salvage.js';
+import { connShape } from '../world/shapes.js';
 
 function extNext(sx, sy, goal, sec) {
   const home = sec == null || sec === HULL;

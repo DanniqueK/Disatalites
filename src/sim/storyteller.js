@@ -1,11 +1,11 @@
 import { T } from '../core/constants.js';
 import { MD } from '../core/data.js';
+import { log } from '../core/messages.js';
 import { G, M, P } from '../core/state.js';
 import { idx, pick, pickW, rnd, rr, shuffle } from '../core/util.js';
 import { occupied } from './stats.js';
 import { addDebris, addPod, addRogue, addWreck } from '../space/exterior-objects.js';
 import { addRaft, cid, contact, det, secName } from '../space/sectors.js';
-import { log } from '../ui/log-modal.js';
 import { addBreachMod, modCells } from '../world/build.js';
 import { hasOnline, online } from '../world/machines.js';
 

@@ -1,9 +1,9 @@
 import { EN, IT, mk } from '../core/data.js';
-import { G, P, V } from '../core/state.js';
-import { $, idx, pick, rnd, rr } from '../core/util.js';
+import { emit } from '../core/events.js';
+import { cmb, log } from '../core/messages.js';
+import { G, P } from '../core/state.js';
+import { idx, pick, rnd, rr } from '../core/util.js';
 import { HULL } from '../space/sectors.js';
-import { cmb, log } from '../ui/log-modal.js';
-import { kick } from '../ui/render.js';
 import { dropItem } from '../world/machines.js';
 
 export function stats() {
@@ -46,12 +46,8 @@ export function hurtPlayer(dmg, src) {
     cmb(`Body takes ${dmg}`, 'bad');
     G.killer = src;
   }
-  const mw = $('#mapWrap');
-  mw.classList.add('hurt');
-  clearTimeout(hurtTimer);
-  hurtTimer = setTimeout(() => mw.classList.remove('hurt'), 220);
+  emit('hurt');
 }
-let hurtTimer = 0;
 export function damageActor(a, dmg) {
   a.hp -= dmg;
   a.alert = true;
@@ -75,9 +71,7 @@ export const occupied = (x, y) =>
   (G.bot && G.bot.x === x && G.bot.y === y) ||
   (G.crew || []).some(c => c.x === x && c.y === y);
 export function addFx(f) {
-  f.t0 = performance.now();
   f.view = f.view || 'station';
   if (f.view === 'ext' && f.sec == null) f.sec = HULL;
-  V.fx.push(f);
-  kick();
+  emit('fx', f);
 }

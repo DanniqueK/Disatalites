@@ -1,8 +1,9 @@
 import { EGH, EGW } from '../core/constants.js';
-import { ANCH, BLOBS, FAC, LEGACY, isRival } from '../core/data.js';
-import { G, M, V } from '../core/state.js';
-import { D4, cheb, clamp, pick, rnd, rr, shuffle } from '../core/util.js';
-import { log } from '../ui/log-modal.js';
+import { ANCH, BLOBS, FAC, isRival, LEGACY } from '../core/data.js';
+import { emit } from '../core/events.js';
+import { log } from '../core/messages.js';
+import { G, M } from '../core/state.js';
+import { cheb, clamp, D4, pick, rnd, rr, shuffle } from '../core/util.js';
 
 function lonlat(x, y) {
   return [-180 + ((x + 0.5) * 360) / EGW, 80 - ((y + 0.5) * 150) / EGH];
@@ -195,7 +196,7 @@ export function legacyTick() {
         o = G.owner[i];
       G.owner[i] = -1;
       if (Math.random() < 0.3) G.hab[i] = 0;
-      V.strikes.push({ x: i % EGW, y: (i / EGW) | 0, t0: performance.now() });
+      emit('strike', { x: i % EGW, y: (i / EGW) | 0 });
       if (L.known)
         log(`${L.n} strikes a ${FAC[o].sh} settlement in ${cellName(i % EGW, (i / EGW) | 0)}.`, 'warn');
     }

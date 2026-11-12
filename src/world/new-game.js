@@ -1,11 +1,11 @@
-import { T, WH, WW } from '../core/constants.js';
+import { SAVE_VERSION, T, WH, WW } from '../core/constants.js';
 import { BR, BRANDS, EN, FAC, mk } from '../core/data.js';
+import { log } from '../core/messages.js';
 import { G, M, P, setG, setP } from '../core/state.js';
-import { D8, cheb, idx, pick, rnd, rr, shuffle } from '../core/util.js';
+import { cheb, D8, idx, pick, rnd, rr, shuffle } from '../core/util.js';
 import { initEarth } from '../space/earth.js';
 import { addDebris } from '../space/exterior-objects.js';
 import { genSectors, initSectors } from '../space/sectors.js';
-import { log } from '../ui/log-modal.js';
 import { addBreachMod, dockPack, fitsAt, freePorts, modCells } from './build.js';
 import { fov } from './fov.js';
 import { dropItem } from './machines.js';
@@ -13,7 +13,7 @@ import { makePack, packFree } from './packs.js';
 
 export function newGame(start) {
   setG({
-    v: 9,
+    v: SAVE_VERSION,
     start,
     turn: 0,
     nid: 1,

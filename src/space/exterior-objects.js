@@ -135,3 +135,10 @@ export function hatchOf(d) {
   }
   return r ? r.hatch : null;
 }
+
+export function derHit(o, x, y) {
+  const sh = o.pack.shape;
+  const ox = o.x - Math.floor(sh.w / 2),
+    oy = o.y - Math.floor(sh.h / 2);
+  return x >= ox && y >= oy && x < ox + sh.w && y < oy + sh.h;
+}

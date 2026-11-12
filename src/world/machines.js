@@ -2,6 +2,7 @@ import { T } from '../core/constants.js';
 import { MD } from '../core/data.js';
 import { G, M, P } from '../core/state.js';
 import { D8, idx, inB } from '../core/util.js';
+import { onGrid } from '../sim/turn.js';
 
 export const ctlOK = m => {
   const mod = G.mods[m.mi];
@@ -41,3 +42,13 @@ export function dropNear(x, y, it) {
   dropItem(P.x, P.y, it);
 }
 export const droneCap = () => G.machines.filter(k => k.type === 'rack' && online(k)).length * 3;
+
+export function machineStatus(m) {
+  const d = MD[m.type];
+  if (m.cond < 60) return 'BROKEN';
+  if (!m.on) return 'OFF';
+  if ((d.use || d.gen) && !onGrid(m)) return 'NO BUS';
+  if (d.use && !m.powered) return 'NO POWER';
+  if (m.type === 'comms' && G.jam > G.turn) return 'JAMMED';
+  return 'ONLINE';
+}

@@ -1,12 +1,13 @@
-import { hullNear, releaseTow, selDrone, taskText } from '../actions/exterior.js';
-import { machineStatus, modBreaches } from '../actions/player.js';
+import { releaseTow, selDrone, taskText } from '../actions/exterior.js';
 import { EGH, EGW, T, WH, WW } from '../core/constants.js';
 import {
+  bandOf,
   BR,
   DT,
   EN,
   ER,
   FAC,
+  hasAI,
   IT,
   MD,
   OC,
@@ -15,41 +16,42 @@ import {
   RINGS,
   ROLE,
   SEC_T,
-  TAGK,
-  bandOf,
-  hasAI,
   stById,
+  TAGK,
 } from '../core/data.js';
+import { log } from '../core/messages.js';
 import { G, M, P, V } from '../core/state.js';
-import { $, cheb, clamp, esc, idx, rr } from '../core/util.js';
+import { cheb, clamp, esc, idx, rr } from '../core/util.js';
 import { atHatch } from '../sim/exterior-tick.js';
 import { stats } from '../sim/stats.js';
 import { refresh } from '../sim/turn.js';
 import { cellOf, isHome, shares } from '../space/earth.js';
 import { hatchOf, objById, stationBox } from '../space/exterior-objects.js';
 import {
-  HULL,
-  LC,
-  SEC,
-  SIGN,
   cid,
   det,
+  HULL,
+  LC,
   locked,
   machAt,
   passR,
   scanOK,
   sdist,
+  SEC,
   secCoord,
   secName,
+  SIGN,
   startFocus,
   startTransfer,
   sweepR,
   travelTime,
 } from '../space/sectors.js';
-import { log, modalOpen, showModal } from './log-modal.js';
+import { $ } from './dom.js';
+import { showModal } from './log-modal.js';
 import { setTab } from './panels.js';
-import { cutSpot, freePorts, modById, modCells, modIndex } from '../world/build.js';
-import { commsOnline, ctlOK, hasOnline, online } from '../world/machines.js';
+import { cutSpot, freePorts, hullNear, modById, modCells, modIndex } from '../world/build.js';
+import { modBreaches } from '../world/control.js';
+import { commsOnline, ctlOK, hasOnline, machineStatus, online } from '../world/machines.js';
 import { portWorld } from '../world/shapes.js';
 
 export const cv = $('#map'),
@@ -1004,7 +1006,7 @@ function drawFixtures(sx, sy, ts, X0, Y0, X1, Y1) {
   }
 }
 setInterval(() => {
-  if (G && V.tab === 'station' && V.animFx && !document.hidden && !modalOpen) render();
+  if (G && V.tab === 'station' && V.animFx && !document.hidden && !V.modalOpen) render();
 }, 160);
 const TAGA = [0.5, 0.22];
 export const cycTags = () => {

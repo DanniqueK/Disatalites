@@ -1,24 +1,24 @@
 import { releaseTow } from './exterior.js';
 import { T, WALK } from '../core/constants.js';
-import { BR, CHAT, DT, EN, FAC, IT, LORE, MC, MD, RC, SATS, SMALL, mk } from '../core/data.js';
+import { BR, CHAT, DT, EN, FAC, IT, LORE, MC, MD, RC, SATS, SMALL } from '../core/data.js';
+import { cmb, log } from '../core/messages.js';
 import { G, M, P, V } from '../core/state.js';
-import { cheb, clamp, idx, inB, pick, rnd, roll, rr } from '../core/util.js';
+import { cheb, clamp, idx, inB, pick, roll, rr } from '../core/util.js';
 import { releaseSat } from '../sim/earth-tick.js';
-import { atHatch } from '../sim/exterior-tick.js';
-import { actorAt, addFx, damageActor, occupied, stats } from '../sim/stats.js';
-import { endTurn, onGrid, refresh } from '../sim/turn.js';
+import { actorAt, addFx, damageActor, stats } from '../sim/stats.js';
+import { canAct, endTurn, onGrid, refresh } from '../sim/turn.js';
 import { cellName } from '../space/earth.js';
 import { spawnDrone } from '../space/exterior-objects.js';
 import { machAt } from '../space/sectors.js';
-import { cmb, log, machinePlate, modalOpen, showModal } from '../ui/log-modal.js';
+import { machinePlate, showModal } from '../ui/log-modal.js';
 import { setTab } from '../ui/panels.js';
-import { modCells, rebuildMap, removeBreach } from '../world/build.js';
+import { rebuildMap, removeBreach } from '../world/build.js';
+import { claimDone, lockdown, modBreaches } from '../world/control.js';
 import { los } from '../world/fov.js';
-import { addStock, ctlOK, droneCap, dropItem, dropNear, online } from '../world/machines.js';
+import { addStock, ctlOK, droneCap, dropItem, dropNear, machineStatus, online } from '../world/machines.js';
 
 /** @typedef {import('../core/types.js').ModalButton} ModalButton */
 
-export const canAct = () => G && !G.over && !modalOpen;
 export function playerMove(dx, dy) {
   if (!canAct()) return;
   if (dx === 0 && dy === 0) return endTurn();
@@ -360,15 +360,6 @@ function itemDesc(it) {
   L.push('\nDamage you take is spread over your body and every equipped part.');
   return L.join('\n');
 }
-export function machineStatus(m) {
-  const d = MD[m.type];
-  if (m.cond < 60) return 'BROKEN';
-  if (!m.on) return 'OFF';
-  if ((d.use || d.gen) && !onGrid(m)) return 'NO BUS';
-  if (d.use && !m.powered) return 'NO POWER';
-  if (m.type === 'comms' && G.jam > G.turn) return 'JAMMED';
-  return 'ONLINE';
-}
 const repairCost = m => ({ s: 2, c: MD[m.type].tech ? 1 : 0 });
 function repairOnce(m) {
   const c = repairCost(m);
@@ -634,26 +625,6 @@ export function machineMenu(m) {
   b.push({ t: 'Close' });
   showModal(d.n.toUpperCase(), body, b, false, false, machinePlate(m));
 }
-export const modBreaches = mi => G.brk.filter(b => b.mod === mi).length;
-export function claimDone(mod, via) {
-  mod.ctl = true;
-  for (const c of modCells(mod)) G.seen[idx(c.x, c.y)] = 1;
-  const n = G.mods.filter(x => x.ctl).length;
-  log(
-    `${mod.name} grid accepts ${via || 'you'}. Systems, air and power in this section answer to KESTREL-9 now. (${n}/${G.mods.length} sections)`,
-    'good',
-  );
-}
-export function lockdown(mod) {
-  const fl = modCells(mod).filter(
-    c => c.c === '.' && !occupied(c.x, c.y) && M.map[idx(c.x, c.y)] === T.FLOOR,
-  );
-  for (let i = 0; i < rr(1, 2) && fl.length; i++) {
-    const c = fl.splice(rnd(fl.length), 1)[0];
-    G.actors.push({ id: G.nid++, type: 'feral', x: c.x, y: c.y, hp: 25, max: 25, alert: true, lost: 0 });
-  }
-  log(`LOCKDOWN: the ${mod.name}'s old maintenance bots wake up.`, 'bad');
-}
 function nodeMenu(m) {
   const mod = G.mods[m.mi];
   const c = repairCost(m);
@@ -801,58 +772,6 @@ function fabMenu(m) {
       : `Stock: ${G.stock.scrap} scrap, ${G.stock.circ} circuits. Uses 4 power while working.\nDrones come out dormant: carry them to a Drone Rack.`,
     b,
   );
-}
-export function fabDone(k, m) {
-  if (k.startsWith('drone_')) {
-    dropNear(m.x, m.y, mk('dorm_' + k.slice(6)));
-    log(`Fabricator: ${RC[k].n} assembled (dormant). Carry it to a Drone Rack.`, 'good');
-  } else if (k === 'tube') {
-    G.kits++;
-    log(
-      'Fabricator: connector tube kit ready. A Utility drone can weld it onto a free port (EXTERIOR).',
-      'good',
-    );
-  } else if (k.startsWith('sat_')) {
-    const s = k.slice(4);
-    G.sats[s]++;
-    log(`Fabricator: ${s} satellite ready. Deploy it with a drone or the Launch Rail.`, 'good');
-  } else if (k === 'ammo') {
-    addStock('ammo', 20);
-    log('Fabricator: +20 ammo.', 'good');
-  } else if (k === 'slot') {
-    P.cap.suit = Math.min(4, P.cap.suit + 1);
-    log('Fabricator: suit hardpoint fitted. +1 suit slot.', 'good');
-  } else if (k === 'scanmod') {
-    const d = G.ext.drones.find(d => !d.scan && atHatch(d)) || G.ext.drones.find(d => !d.scan);
-    if (d) {
-      d.scan = true;
-      log(
-        `Fabricator: Survey Scanner fitted to ${d.name}. Sections it scraps in the field still teach you their schematics.`,
-        'good',
-      );
-    } else {
-      G.scanSpare = (G.scanSpare || 0) + 1;
-      log('Fabricator: Survey Scanner ready. It will be fitted to the next drone you activate.', 'good');
-    }
-  } else if (k === 'iface') {
-    const d = G.ext.drones.find(d => !d.iface && atHatch(d)) || G.ext.drones.find(d => !d.iface);
-    if (d) {
-      d.iface = true;
-      log(
-        `Fabricator: Interface Module fitted to ${d.name}. It can now jack into grid nodes from outside the hull.`,
-        'good',
-      );
-    } else {
-      G.ifaceSpare = (G.ifaceSpare || 0) + 1;
-      log('Fabricator: Interface Module ready. It will be fitted to the next drone you activate.', 'good');
-    }
-  } else if (k === 'thrust') {
-    G.thrust = true;
-    log('Fabricator: drone thrusters fitted. The fleet moves faster.', 'good');
-  } else {
-    dropNear(m.x, m.y, mk(k));
-    log(`Fabricator: ${RC[k].n} ready, placed next to the fabricator.`, 'good');
-  }
 }
 export function deployFlow(via, droneId) {
   const types = SATS.filter(s => G.sats[s] > 0);
