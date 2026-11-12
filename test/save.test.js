@@ -2,14 +2,17 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { SAVE_VERSION } from '../src/core/constants.js';
 import {
   hasSave,
+  importSave,
   loadSave,
   MIGRATIONS,
   parseSave,
   save,
   SAVE_KEY,
+  saveFileName,
   serialize,
   setAutosave,
   setStorage,
+  storedSaveText,
 } from '../src/core/save.js';
 import { G, P } from '../src/core/state.js';
 import { endTurn } from '../src/sim/turn.js';
@@ -136,6 +139,31 @@ describe('save and load', () => {
     expect(save()).toBe(true);
     expect(warnings()).toHaveLength(2);
     expect(warnings()[1]).toContain('working again');
+  });
+
+  it('exports to a named file and imports it back with the same state', () => {
+    for (let i = 0; i < 12; i++) endTurn(true);
+    const name = saveFileName();
+    expect(name).toBe(`kestrel9-turn12-seed${G.seed}.json`);
+    const file = serialize();
+    store.m.clear();
+    newGame('cryo');
+    expect(importSave(file)).toEqual({ ok: true });
+    expect(serialize()).toBe(file);
+    expect(store.getItem(SAVE_KEY)).toBe(file);
+  });
+
+  it('refuses a bad file with a reason and leaves the running game alone', () => {
+    const before = serialize();
+    const res = importSave('not a save');
+    expect(res.ok).toBe(false);
+    expect(res.reason).toContain('corrupt');
+    expect(serialize()).toBe(before);
+  });
+
+  it('exports the stored save as text from the title screen', () => {
+    save();
+    expect(storedSaveText()).toBe(serialize());
   });
 
   it('keeps the player in the save', () => {

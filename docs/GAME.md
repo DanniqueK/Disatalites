@@ -348,6 +348,7 @@ Multi-turn actions (wait, repair until done, rest, claim) call `endTurn(true)` i
 - `loadSave()` returns `{ ok, reason }`. The title screen shows the reason in a "SAVE NOT LOADED" dialog instead of silently starting a new game, and the save is left untouched.
 - `applySave` rebuilds the derived caches (`initLand`, `initStars`, `buildRegions`, `rebuildMap`, `fov`).
 - The save is cleared on game over.
+- **Save files**: the help screen has \"Export save file\" while a game runs (`saveFileName`: `kestrel9-turn<N>-seed<S>.json`). The title screen can import a file (`importSave`: the same checks and migrations as a normal load, then it is stored) and export the stored save as it is (`storedSaveText`), even one this build cannot load.
 - `setStorage` swaps the storage backend; the tests use an in-memory one.
 
 ## Known quirks
