@@ -378,7 +378,7 @@ export function packModule(mi) {
   }
   G.actors = G.actors.filter(a => !set.has(idx(a.x, a.y)));
   for (const b of m.breaches) pack.breaches.push({ lx: b.lx, ly: b.ly });
-  for (const [pi, l] of Object.entries(m.links)) {
+  for (const l of Object.values(m.links)) {
     const o = modById(l.mod);
     if (o) delete o.links[l.pi];
   }
@@ -491,8 +491,7 @@ export function jointLoads() {
   if (n) dfs(0, -1);
   const mv = G.move ? 1.5 : 1;
   return edges.map((e, k) => {
-    const ma = G.mods[e.a],
-      mb = G.mods[e.b];
+    const ma = G.mods[e.a];
     let load = 0,
       child = -1;
     if (bridge.has(k)) {

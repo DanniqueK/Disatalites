@@ -1,10 +1,9 @@
 import { T, WH, WW } from '../core/constants.js';
-import { DPOOL, DT } from '../core/data.js';
+import { DT } from '../core/data.js';
 import { G, M } from '../core/state.js';
 import { cheb, idx, inB, pickW, rnd, rr } from '../core/util.js';
 import { HULL, LC } from './sectors.js';
 import { online } from '../world/machines.js';
-import { fillDerelict, makePack } from '../world/packs.js';
 
 export const extFree = (x, y) => inB(x, y) && M.map[idx(x, y)] === T.VOID;
 export function stationBox() {
@@ -49,17 +48,6 @@ export function addDebris(near) {
     y,
     res: { scrap: rr(5, 12), circ: rr(1, 5), rat: Math.random() < 0.25 ? rr(1, 3) : 0 },
   });
-}
-function addDerelict(fn, first) {
-  if (!fn) {
-    const have = G.mods.map(m => m.fn).concat(G.ext.objs.filter(o => o.kind === 'der').map(o => o.pack.fn));
-    fn =
-      pickW(Object.keys(DPOOL), k => Math.max(0, DPOOL[k] - have.filter(h => h === k).length * 1.5)) ||
-      'cargo';
-  }
-  const pack = fillDerelict(makePack(fn, null), first);
-  const [x, y] = randSpace(first ? 7 : 10, first ? 16 : 30);
-  G.ext.objs.push({ id: G.nid++, sec: G.home, kind: 'der', x, y, pack, tow: null });
 }
 export function addWreck(dt) {
   const [x, y] = randSpace(5, 24);

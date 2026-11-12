@@ -305,7 +305,6 @@ export const MC = {
   driver: [40, 16, 30],
   thruster: [24, 10, 20],
 };
-const NOKIT = ['node', 'junc', 'mount', 'cryo', 'terminal', 'hp'];
 export const XTRA = {
   civil: ['bunk', 'locker', 'escrub'],
   science: ['locker', 'escrub'],
@@ -813,6 +812,7 @@ export const LEGACY = [
   ['BASTION-9', 'Corporate Sovereignty Arc', 2101],
   ['LONGBOW', 'Northern Accord', 2034],
 ];
+/** @type {[name: string, lon: number, lat: number][]} */
 export const ANCH = [
   ['the Great Plains', -100, 42],
   ['the Pacific Northwest', -122, 50],
@@ -938,10 +938,6 @@ export const OBJ = [
   { t: "Spoof a legacy satellite's IFF tags (EARTH tab).", ok: () => G.stat.spoofs > 0 },
   { t: 'Shape the balance of power before the Accord convenes.', ok: () => false },
 ];
-const itN = it => {
-  const d = IT[it.key];
-  return d.s === 'kit' ? MD[d.mt].n + ' kit' : d.n;
-};
 export function mk(key, frac) {
   const d = IT[key];
   const it = { key };

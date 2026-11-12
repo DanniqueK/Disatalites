@@ -70,7 +70,7 @@ const INC = [
     w: D => D.tension * 1.4,
     run: () => {
       const n = rr(1, G.mods.length > 6 ? 3 : 2);
-      let hit = [];
+      const hit = [];
       for (let i = 0; i < n; i++) {
         const mi = rnd(G.mods.length);
         if (addBreachMod(mi)) hit.push(G.mods[mi].name);
@@ -139,7 +139,7 @@ const INC = [
     run: () => {
       const mi = rnd(G.mods.length),
         m = G.mods[mi];
-      const b = addBreachMod(mi);
+      addBreachMod(mi);
       const fl = modCells(m).filter(
         c => c.c === '.' && !occupied(c.x, c.y) && M.map[idx(c.x, c.y)] === T.FLOOR,
       );

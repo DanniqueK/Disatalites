@@ -930,7 +930,7 @@ export function crewTick() {
       continue;
     }
     const ws = ROLE[c.role].ws;
-    let cand = G.machines.filter(
+    const cand = G.machines.filter(
       m =>
         ws.includes(m.type) &&
         G.mods[m.mi] &&
@@ -1220,7 +1220,7 @@ export function revealSector(s, by) {
 }
 export function travelTime(a, b) {
   if (a === HULL && b === HULL) return 0;
-  const ea = (a === HULL) + (b === HULL);
+  const ea = Number(a === HULL) + Number(b === HULL);
   const ra = a === HULL ? G.home : a,
     rb = b === HULL ? G.home : b;
   if (ra === rb) return 2;

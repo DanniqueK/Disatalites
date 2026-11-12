@@ -48,9 +48,10 @@ export function hurtPlayer(dmg, src) {
   }
   const mw = $('#mapWrap');
   mw.classList.add('hurt');
-  clearTimeout(hurtPlayer.t);
-  hurtPlayer.t = setTimeout(() => mw.classList.remove('hurt'), 220);
+  clearTimeout(hurtTimer);
+  hurtTimer = setTimeout(() => mw.classList.remove('hurt'), 220);
 }
+let hurtTimer = 0;
 export function damageActor(a, dmg) {
   a.hp -= dmg;
   a.alert = true;

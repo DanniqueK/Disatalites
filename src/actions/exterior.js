@@ -22,6 +22,8 @@ import {
 } from '../world/build.js';
 import { cloneShape, portWorld, toLocal } from '../world/shapes.js';
 
+/** @typedef {import('../core/types.js').ModalButton} ModalButton */
+
 export const selDrone = () => G.ext.drones.find(d => d.id === G.sel);
 export function releaseTow(d) {
   if (d.task.type === 'tow' || d.task.type === 'park') {
@@ -74,6 +76,7 @@ export function learnFrom(pack, why) {
   if (got.length) log(`SCHEMATICS ${why}: ${got.join(', ')}.`, 'good');
   return got;
 }
+/** @returns {ModalButton[]} */
 function scrapOpts(d, o) {
   const v = scrapValue(o.pack);
   const atHull = o.sec === HULL;
@@ -128,15 +131,17 @@ function towMenu(d, o) {
     desc + (fps.length ? '' : '\n(No free port has room for it right now.)'),
     fps
       .slice(0, 7)
-      .map(({ fp }) => ({
-        t: 'Dock at ' + portLabel(fp),
-        f: () =>
-          cmdDrone(
-            d,
-            { type: 'tow', oid: o.id, mid: fp.mid, pi: fp.pi, att: o.tow === d.id ? 1 : 0, tk: 0 },
-            `${d.name}: towing ${o.pack.name} to the ${portLabel(fp)}.`,
-          ),
-      }))
+      .map(
+        /** @returns {ModalButton} */ ({ fp }) => ({
+          t: 'Dock at ' + portLabel(fp),
+          f: () =>
+            cmdDrone(
+              d,
+              { type: 'tow', oid: o.id, mid: fp.mid, pi: fp.pi, att: o.tow === d.id ? 1 : 0, tk: 0 },
+              `${d.name}: towing ${o.pack.name} to the ${portLabel(fp)}.`,
+            ),
+        }),
+      )
       .concat(park)
       .concat(scrapOpts(d, o))
       .concat([{ t: 'Cancel' }]),
@@ -215,7 +220,6 @@ export function extTap(x, y) {
       log('The section does not fit there.', 'warn');
       return refresh();
     }
-    const fm = G.mods[fp.mi];
     return showModal(
       'DOCKING PORT',
       `${portLabel(fp)}.\n\nLay a tube: pick an end point in open space (it ends in a new port) or another free port (it joins them, and a loop shares structural load).\nCost: 2 scrap per tile (tube kits cover 6 tiles each, you have ${G.kits}) + 1 circuit. A Utility drone welds it.\n\nSeal: weld the hatch shut (3 scrap). It can be cut open again later.`,
@@ -306,7 +310,7 @@ export function extTap(x, y) {
       return showModal(
         `${m.name.toUpperCase()}`,
         `${BR[m.brand].n} (${BR[m.brand].cc}) ${m.shape.kind} section.\nPressure ${Math.round(m.pressure)}%. Links: ${Object.keys(m.links).length}/${m.shape.ports.length} ports.\n\nA Tug drone can unbolt this section so you can dock it somewhere else.${why ? '\nCannot detach right now: ' + why : ''}`,
-        [
+        /** @type {ModalButton[]} */ ([
           {
             t: 'Detach with this drone',
             k: 'danger',
@@ -318,7 +322,7 @@ export function extTap(x, y) {
                 `${d.name}: moving in to unbolt the ${m.name}.`,
               ),
           },
-        ]
+        ])
           .concat(cutOpt(d, m, x, y))
           .concat(ifaceOpts(d, m, mi))
           .concat([
@@ -507,23 +511,25 @@ function connMenu(d, fp) {
     'CONNECTOR PIECES',
     `Prefab corridor parts, welded on by a Utility drone. Pieces with more ports let you branch out or close loops (loops share structural load).\nPort: ${portLabel(fp)}.`,
     opts
-      .map(({ k, fit }) => {
-        const c = connCost(k),
-          C = CONN[k];
-        return {
-          t: `${C.n} · ${C.p.length} ports · ${c.s}s ${c.c}c · ${c.t}t${fit.length ? '' : ' [no room]'}`,
-          dis: !fit.length || d.dt !== 'util' || G.stock.scrap < c.s || G.stock.circ < c.c,
-          f: () => {
-            G.stock.scrap -= c.s;
-            G.stock.circ -= c.c;
-            cmdDrone(
-              d,
-              { type: 'build', conn: k, mid: fp.mid, pi: fp.pi, w: 0, need: c.t, paid: c },
-              `${d.name}: welding a ${C.n.toLowerCase()} onto the ${portLabel(fp)}.`,
-            );
-          },
-        };
-      })
+      .map(
+        /** @returns {ModalButton} */ ({ k, fit }) => {
+          const c = connCost(k),
+            C = CONN[k];
+          return {
+            t: `${C.n} · ${C.p.length} ports · ${c.s}s ${c.c}c · ${c.t}t${fit.length ? '' : ' [no room]'}`,
+            dis: !fit.length || d.dt !== 'util' || G.stock.scrap < c.s || G.stock.circ < c.c,
+            f: () => {
+              G.stock.scrap -= c.s;
+              G.stock.circ -= c.c;
+              cmdDrone(
+                d,
+                { type: 'build', conn: k, mid: fp.mid, pi: fp.pi, w: 0, need: c.t, paid: c },
+                `${d.name}: welding a ${C.n.toLowerCase()} onto the ${portLabel(fp)}.`,
+              );
+            },
+          };
+        },
+      )
       .concat([{ t: 'Cancel' }]),
   );
 }
@@ -571,6 +577,7 @@ function constructMenu(d, fp) {
       .concat([{ t: 'Cancel' }]),
   );
 }
+/** @returns {ModalButton[]} */
 function cutOpt(d, m, x, y) {
   if (M.map[idx(x, y)] !== T.WALL) return [];
   const [lx, ly] = toLocal(m, x, y);
@@ -677,6 +684,7 @@ function tubeTap(d, x, y) {
     ],
   );
 }
+/** @returns {ModalButton[]} */
 function ifaceOpts(d, m, mi) {
   const node = G.machines.find(k => k.type === 'node' && k.mi === mi);
   if (!node || m.fn === 'tube') return [];

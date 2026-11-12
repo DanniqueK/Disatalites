@@ -58,9 +58,9 @@ export let TS = 16,
   cssW = 0,
   cssH = 0,
   dpr = 1,
-  CAM = { x: 0, y: 0 },
   offX = 0,
   offY = 0;
+export const CAM = { x: 0, y: 0 };
 export function resize() {
   const r = $('#mapWrap').getBoundingClientRect();
   dpr = window.devicePixelRatio || 1;
@@ -1820,14 +1820,6 @@ function dronePos(d) {
   const s = SEC(d.sec);
   return s ? [s.ox + 1, s.oy] : [OC, OC];
 }
-const pick2 = (h, a) => a[Math.floor(h * 97) % a.length];
-const shadeMixC = {};
-function shadeMix(c) {
-  if (shadeMixC[c]) return shadeMixC[c];
-  const n = parseInt(c.slice(1), 16);
-  return (shadeMixC[c] =
-    `rgb(${(((n >> 16) & 255) * 0.6) | 0},${(((n >> 8) & 255) * 0.6) | 0},${((n & 255) * 0.6) | 0})`);
-}
 const spos = s => (det(s) === 1 && s.fz ? [s.ox + s.fz[0], s.oy + s.fz[1]] : [s.ox, s.oy]);
 function renderOrbit() {
   const ts = clamp((Math.min(cssW, cssH) / OG) * (V.oz || 1), 3, 44);
@@ -2246,7 +2238,7 @@ export function uiOrbit() {
   $('#ctx2H').textContent = '/ C O N T A C T S /';
   const h = G.sectors[G.home];
   const cd = Math.max(0, (G.timers.sweep || 0) - G.turn);
-  let c = `<div class="console">
+  const c = `<div class="console">
     <div class="dial"><div class="lcd">PASSIVE ${Math.round(passR() * 1400).toLocaleString('en-US')} km<br>SWEEP ${Math.round(sweepR() * 1400).toLocaleString('en-US')} km</div>
     <div class="lamps"><span class="lamp ${hasOnline('sensor') ? 'on' : ''}">ARRAY</span><span class="lamp ${commsOnline() ? 'on' : ''}">COMMS</span><span class="lamp ${G.fscan ? 'amber' : ''}">FOCUS</span><span class="lamp ${G.legacy.some(L => L.aware > G.turn && !L.tags.includes(TAGK)) ? 'red' : ''}">LOCKED</span></div></div>
     <button class="key wide" data-a="sweep" ${cd || G.bat < 8 ? 'disabled' : ''}>ACTIVE SWEEP <small>${cd ? 'cooling ' + cd + 't' : '8 batt · LOUD'}</small></button>

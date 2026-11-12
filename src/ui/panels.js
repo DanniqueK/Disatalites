@@ -63,7 +63,7 @@ export function updateUI() {
   const S = stats(),
     c = caps(),
     pr = pressureAt(P.x, P.y);
-  document.querySelectorAll('#tabs button').forEach(b => {
+  document.querySelectorAll('#tabs button').forEach((/** @type {HTMLElement} */ b) => {
     const t = b.dataset.tab;
     b.classList.toggle('on', t === V.tab);
     b.classList.toggle(
@@ -281,7 +281,7 @@ function uiEarth() {
 }
 function renderPad() {
   const p = $('#pad');
-  let h = '';
+  let h;
   if (V.tab === 'station') {
     h = `<div id="dpad">${[
       [-1, -1, '↖'],

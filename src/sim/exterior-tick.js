@@ -497,7 +497,7 @@ function droneAct(d) {
           pk.pressure = 0;
           pk.ctl = true;
           pk.breaches = [];
-          const m = dockPack(pk, fp, fits[0], true);
+          dockPack(pk, fp, fits[0], true);
           G.stat.docked++;
           G.stat.built = (G.stat.built || 0) + 1;
           if (t.conn) G.stat.tubes = (G.stat.tubes || 0) + 1;
@@ -635,7 +635,6 @@ function droneAct(d) {
           });
           pk.breaches = [];
           const fits = fitsAt(pk, fp);
-          d.x = d.x;
           if (fits.length) {
             const nx = freeNear(d.x, d.y, 8);
             dockPack(pk, fp, pick(fits), true);
@@ -689,7 +688,7 @@ function droneAct(d) {
       if (cheb(d.x, d.y, tx, ty) <= 1) {
         const fits = fitsAt(o.pack, fp);
         removeObj(o);
-        const m = dockPack(o.pack, fp, pick(fits));
+        dockPack(o.pack, fp, pick(fits));
         if (o.pack.redock) G.stat.redocked++;
         const nx = freeNear(d.x, d.y, 10);
         if (nx) {
@@ -807,17 +806,6 @@ function freeNear(x, y, r) {
       if (extFree(nx, ny)) return [nx, ny];
     }
   return null;
-}
-function distToStation(x, y) {
-  let best = 99;
-  for (let dy = -6; dy <= 6; dy++)
-    for (let dx = -6; dx <= 6; dx++) {
-      const nx = x + dx,
-        ny = y + dy;
-      if (inB(nx, ny) && M.map[idx(nx, ny)] !== T.VOID)
-        best = Math.min(best, Math.max(Math.abs(dx), Math.abs(dy)));
-    }
-  return best;
 }
 function swarmAct(r) {
   const dr = G.ext.drones

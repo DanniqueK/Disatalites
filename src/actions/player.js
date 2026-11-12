@@ -16,6 +16,8 @@ import { modCells, rebuildMap, removeBreach } from '../world/build.js';
 import { los } from '../world/fov.js';
 import { addStock, ctlOK, droneCap, dropItem, dropNear, online } from '../world/machines.js';
 
+/** @typedef {import('../core/types.js').ModalButton} ModalButton */
+
 export const canAct = () => G && !G.over && !modalOpen;
 export function playerMove(dx, dy) {
   if (!canAct()) return;
@@ -107,7 +109,6 @@ export function playerMove(dx, dy) {
   endTurn();
 }
 function playerMelee(a) {
-  const S = stats();
   let wd = { n: 'Fists', d: [2, 4] },
     best = 0;
   for (const it of P.eq.weap.concat(P.eq.tool)) {
@@ -419,7 +420,6 @@ function giveItem(it) {
   }
 }
 function uninstall(m) {
-  const mod = G.mods[m.mi];
   if (G.fab && G.fab.mid === m.id) {
     G.fab = null;
     log('Fabrication cancelled.', 'warn');
@@ -443,6 +443,7 @@ function stripValue(t, cond) {
   return { s: Math.max(2, Math.round(base[0] * 0.4 * q)), c: Math.round(base[1] * 0.3 * q) };
 }
 const NOSTRIP = ['node', 'junc', 'mount', 'hp'];
+/** @returns {ModalButton[]} */
 function stripOpt(m, locked) {
   if (NOSTRIP.includes(m.type) || m.type === 'terminal') return [];
   const v = stripValue(m.type, m.cond);
@@ -555,8 +556,7 @@ export function machineMenu(m) {
     return;
   }
   const d = MD[m.type],
-    c = repairCost(m),
-    st = machineStatus(m);
+    c = repairCost(m);
   const body = `${d.desc}${m.type === 'fab' && G.fab ? `\nBuilding: ${RC[G.fab.r].n} ${G.fab.prog}/${RC[G.fab.r].t}` : ''}${m.type === 'med' && m.prog ? `\nRecharging: ${m.prog} turns` : ''}${m.type === 'junc' ? `\nSection on power bus: ${mod && mod.onGrid ? 'yes' : 'no'}` : ''}${(d.use || d.gen) && !onGrid(m) ? `\nThis section is cut off from the power bus. Fix its Junction Box (J), or the ones on the way to a generator.` : ''}${m.type === 'rack' ? `\nFleet: ${G.ext.drones.length}/${droneCap()}${m.hatch ? '' : '\nNo free docking port nearby: drones cannot launch.'}` : ''}`;
   const b = [];
   if (m.cond < 100 && !['terminal', 'locker', 'cryo', 'bunk'].includes(m.type)) {
@@ -864,55 +864,59 @@ export function deployFlow(via, droneId) {
     'DEPLOY SATELLITE',
     'Which satellite?',
     types
-      .map(s => ({
-        t: `${s} (${G.sats[s]} in stock)`,
-        f: () => {
-          const opts = [];
-          for (const r of G.reqs.filter(r => r.type === 'sat' && r.sat === s))
-            opts.push({
-              t: `Fulfil ${FAC[r.f].sh} request: over ${cellName(r.cell[0], r.cell[1])}`,
-              a: { req: r.id },
-            });
-          if (G.contact)
-            FAC.forEach((F, fi) =>
-              opts.push({ t: `Give to ${F.sh} (no request, smaller reward)`, a: { f: fi } }),
+      .map(
+        /** @returns {ModalButton} */ s => ({
+          t: `${s} (${G.sats[s]} in stock)`,
+          f: () => {
+            const opts = [];
+            for (const r of G.reqs.filter(r => r.type === 'sat' && r.sat === s))
+              opts.push({
+                t: `Fulfil ${FAC[r.f].sh} request: over ${cellName(r.cell[0], r.cell[1])}`,
+                a: { req: r.id },
+              });
+            if (G.contact)
+              FAC.forEach((F, fi) =>
+                opts.push({ t: `Give to ${F.sh} (no request, smaller reward)`, a: { f: fi } }),
+              );
+            if (!opts.length) {
+              showModal('NO CONTACT', 'Bring a Comms Array online first so you know who to put it up for.', [
+                { t: 'OK' },
+              ]);
+              return;
+            }
+            showModal(
+              `${s} SATELLITE`,
+              'Assign it to:',
+              opts
+                .map(
+                  /** @returns {ModalButton} */ o => ({
+                    t: o.t,
+                    f: () => {
+                      G.sats[s]--;
+                      if (via === 'rail') {
+                        log(`Launch Rail fires. ${s} satellite climbing.`, 'good');
+                        endTurn(true);
+                        releaseSat(s, o.a);
+                        endTurn();
+                      } else {
+                        const d = G.ext.drones.find(x => x.id === droneId);
+                        if (!d) {
+                          G.sats[s]++;
+                          return;
+                        }
+                        releaseTow(d);
+                        d.task = { type: 'deploy', sat: s, assign: o.a };
+                        log(`${d.name} carries the ${s} satellite out to release distance.`);
+                        refresh();
+                      }
+                    },
+                  }),
+                )
+                .concat([{ t: 'Cancel' }]),
             );
-          if (!opts.length) {
-            showModal('NO CONTACT', 'Bring a Comms Array online first so you know who to put it up for.', [
-              { t: 'OK' },
-            ]);
-            return;
-          }
-          showModal(
-            `${s} SATELLITE`,
-            'Assign it to:',
-            opts
-              .map(o => ({
-                t: o.t,
-                f: () => {
-                  G.sats[s]--;
-                  if (via === 'rail') {
-                    log(`Launch Rail fires. ${s} satellite climbing.`, 'good');
-                    endTurn(true);
-                    releaseSat(s, o.a);
-                    endTurn();
-                  } else {
-                    const d = G.ext.drones.find(x => x.id === droneId);
-                    if (!d) {
-                      G.sats[s]++;
-                      return;
-                    }
-                    releaseTow(d);
-                    d.task = { type: 'deploy', sat: s, assign: o.a };
-                    log(`${d.name} carries the ${s} satellite out to release distance.`);
-                    refresh();
-                  }
-                },
-              }))
-              .concat([{ t: 'Cancel' }]),
-          );
-        },
-      }))
+          },
+        }),
+      )
       .concat([{ t: 'Cancel' }]),
   );
 }

@@ -133,7 +133,7 @@ export function genShape(kind) {
       h = y1 - y0 + 3;
     const g = [];
     for (let y = 0; y < h; y++) {
-      let row = [];
+      const row = [];
       for (let x = 0; x < w; x++) {
         const sx = x + x0 - 1,
           sy = y + y0 - 1;

@@ -9,6 +9,8 @@ import { tagName } from '../space/sectors.js';
 import { log, showModal } from '../ui/log-modal.js';
 import { commsOnline, hasOnline } from '../world/machines.js';
 
+/** @typedef {import('../core/types.js').ModalButton} ModalButton */
+
 export function startSurvey(rid) {
   if (!hasOnline('sensor')) {
     log('Needs an online Sensor Array.', 'warn');
@@ -47,16 +49,18 @@ export function spoofMenu(lid) {
   showModal(
     `IFF SPOOF: ${L.n}`,
     `${L.n}, ${L.org} (${L.yr}). Strike radius ${L.r}.\nTagged friendly: ${L.tags.length ? L.tags.map(tagName).join(', ') : 'nobody'}\n\nInjecting a faction's ID into its IFF table makes it stop firing on that faction. It keeps firing on everyone else, so it becomes their weapon against rivals.\n\nCost: 6 circuits, 30 turns of comms time. Success ${ch}%${hasOnline('sensor') ? ' (Sensor Array bonus)' : ''}. Failure damages the Comms Array. Rivals may notice.`,
-    FAC.map((F, fi) => ({
-      t: `Tag ${F.sh}`,
-      dis: L.tags.includes(fi) || G.stock.circ < 6,
-      f: () => {
-        G.stock.circ -= 6;
-        G.spoof = { lid, f: fi, prog: 0 };
-        log(`IFF spoof on ${L.n} for ${F.sh} started.`);
-        refresh();
-      },
-    })).concat([
+    FAC.map(
+      /** @returns {ModalButton} */ (F, fi) => ({
+        t: `Tag ${F.sh}`,
+        dis: L.tags.includes(fi) || G.stock.circ < 6,
+        f: () => {
+          G.stock.circ -= 6;
+          G.spoof = { lid, f: fi, prog: 0 };
+          log(`IFF spoof on ${L.n} for ${F.sh} started.`);
+          refresh();
+        },
+      }),
+    ).concat([
       {
         t: 'Tag KESTREL-9 (your drones fly safe near it)',
         dis: L.tags.includes(TAGK) || G.stock.circ < 6,

@@ -270,7 +270,7 @@ function spoofResolve(s) {
   }
 }
 export function releaseSat(type, assign) {
-  let r = assign.req ? G.reqs.find(x => x.id === assign.req) : null;
+  const r = assign.req ? G.reqs.find(x => x.id === assign.req) : null;
   const f = r ? r.f : assign.f;
   const cell = r && r.type === 'sat' && r.sat === type ? r.cell : frontierCell(f);
   G.orbit.push({ f, type, cx: cell[0], cy: cell[1] });
