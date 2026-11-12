@@ -16,7 +16,12 @@ const LEGACY_KEYS = ['k9save9'];
  * @type {Record<number, (data: { G: any, P: any }) => void>}
  */
 // Format 11 (hallway station layout) cannot be converted from older layouts, so older saves are rejected.
-export const MIGRATIONS = {};
+export const MIGRATIONS = {
+  // v12: mount pads and empty hardpoints are gone; gear is placed freely.
+  11: d => {
+    d.G.machines = d.G.machines.filter(k => k.type !== 'mount' && k.type !== 'hp');
+  },
+};
 
 /**
  * @typedef {Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>} SaveStorage

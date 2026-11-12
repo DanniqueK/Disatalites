@@ -76,6 +76,15 @@ describe('save and load', () => {
     expect(res.data.G.b).toBe(2);
   });
 
+  it('drops mount pads and empty hardpoints from format 11 saves', () => {
+    const data = JSON.parse(serialize());
+    data.G.v = 11;
+    data.G.machines.push({ id: 1e6, type: 'mount' }, { id: 1e6 + 1, type: 'hp' });
+    const res = parseSave(JSON.stringify(data));
+    expect(res.ok).toBe(true);
+    expect(res.data.G.machines.some(k => k.type === 'mount' || k.type === 'hp')).toBe(false);
+  });
+
   it('rejects saves from before the hallway station layout (format 10 and older)', () => {
     const data = JSON.parse(serialize());
     data.G.v = 10;

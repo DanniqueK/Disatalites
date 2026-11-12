@@ -46,4 +46,6 @@ export const pickW = (arr, wf) => {
   }
   return arr[arr.length - 1];
 };
+/** "a" or "an" for a word: an('Emergency Scrubber') === 'an'. */
+export const an = word => (/^[aeiou]/i.test(word) ? 'an' : 'a');
 export const dirName = (dx, dy) => (dy < 0 ? 'north' : dy > 0 ? 'south' : dx < 0 ? 'west' : 'east');

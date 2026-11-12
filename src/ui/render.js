@@ -324,35 +324,23 @@ function tile(x, y, px, py, v, ts) {
         ctx.fillRect(px, py, ts, ts);
         break;
       }
-      if (k.type === 'mount') {
-        ctx.fillStyle = v ? B.floor : '#050805';
-        ctx.fillRect(px, py, ts, ts);
-        ctx.strokeStyle = v ? '#3f7a4a' : '#1a3020';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([2, 2]);
-        ctx.strokeRect(px + 2.5, py + 2.5, ts - 5, ts - 5);
-        ctx.setLineDash([]);
-        break;
-      }
       if (k.wall) {
         wallDraw(px, py, ts, B, v);
         const mine = G.mods[k.mi] && G.mods[k.mi].ctl,
           col =
-            k.type === 'hp'
-              ? '#7a6050'
-              : k.type === 'turret'
-                ? online(k)
-                  ? '#ff7050'
-                  : '#a03030'
-                : k.type === 'junc'
-                  ? k.cond < 60
+            k.type === 'turret'
+              ? online(k)
+                ? '#ff7050'
+                : '#a03030'
+              : k.type === 'junc'
+                ? k.cond < 60
+                  ? '#e04040'
+                  : '#ffa040'
+                : mine
+                  ? '#2fdc4f'
+                  : k.cond < 60
                     ? '#e04040'
-                    : '#ffa040'
-                  : mine
-                    ? '#2fdc4f'
-                    : k.cond < 60
-                      ? '#e04040'
-                      : '#e0c030';
+                    : '#e0c030';
         const [fx, fy] = k.face || [0, 1];
         const pw = ts * 0.62,
           cx = px + ts / 2 + fx * ts * 0.16,
@@ -1087,7 +1075,7 @@ function drawLabels(list, sx, sy, ts, avoid) {
 function stationTags(sx, sy) {
   const L = [];
   for (const m of G.machines) {
-    if (!M.vis[idx(m.x, m.y)] || ['terminal', 'locker', 'bunk', 'mount'].includes(m.type)) continue;
+    if (!M.vis[idx(m.x, m.y)] || ['terminal', 'locker', 'bunk'].includes(m.type)) continue;
     if (m.type === 'node') {
       const md = G.mods[m.mi];
       if (md && !md.ctl)
@@ -1100,7 +1088,6 @@ function stationTags(sx, sy) {
         });
       continue;
     }
-    if (m.type === 'hp') continue;
     if (m.type === 'turret' && ctlOK(m) && m.cond >= 60 && G.stock.ammo < 1) {
       L.push({ x: m.x, y: m.y, t: 'TURRET · NO AMMO', bg: '#ff7050', fg: '#000' });
       continue;
@@ -1558,7 +1545,6 @@ function drawDer(o, sx, sy, ts) {
       ctx.fillRect(sx(ox + x), sy(oy + y), Math.ceil(ts), Math.ceil(ts));
     }
   for (const k of o.pack.mach) {
-    if (k.type === 'mount') continue;
     ctx.fillStyle = '#a03030';
     ctx.fillRect(sx(ox + k.lx) + ts * 0.2, sy(oy + k.ly) + ts * 0.2, ts * 0.6, ts * 0.6);
   }

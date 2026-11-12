@@ -66,10 +66,10 @@ function towMenu(d, o) {
     .sort((a, b) => Math.hypot(a.fp.x - o.x, a.fp.y - o.y) - Math.hypot(b.fp.x - o.x, b.fp.y - o.y));
   const desc = `${o.pack.name} section, ${BR[o.pack.brand].n} (${BR[o.pack.brand].cc}). ${o.pack.shape.ports.length} ports.\nContains: ${
     o.pack.mach
-      .filter(k => k.type !== 'mount' && k.type !== 'node' && k.type !== 'junc')
+      .filter(k => k.type !== 'node' && k.type !== 'junc')
       .map(k => MD[k.type].n + (k.cond < 60 ? ' (worn)' : ''))
       .join(', ') || 'no machines'
-  }${o.pack.mach.filter(k => k.type === 'mount').length ? ', ' + o.pack.mach.filter(k => k.type === 'mount').length + ' empty mounts' : ''}.\n${d.dt === 'tug' ? 'Tug tows at full speed.' : 'Utility drones tow slowly (1 tile per 3 turns).'}\nIt snaps on in whatever orientation fits. Scrapping it at the station (or with a drone carrying a Survey Scanner) teaches you its schematics.`;
+  }.\n${d.dt === 'tug' ? 'Tug tows at full speed.' : 'Utility drones tow slowly (1 tile per 3 turns).'}\nIt snaps on in whatever orientation fits. Scrapping it at the station (or with a drone carrying a Survey Scanner) teaches you its schematics.`;
   const park =
     o.sec !== HULL
       ? [
